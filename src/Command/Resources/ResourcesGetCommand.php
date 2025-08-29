@@ -54,7 +54,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $environment = $this->getSelectedEnvironment();
 
         try {
-            $nextDeployment = $this->loadNextDeployment($environment);
+            $nextDeployment = $this->api()->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
                 $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api()->getEnvironmentLabel($environment, 'comment')));
@@ -63,7 +63,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
             throw $e;
         }
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->api()->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -94,7 +94,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
         $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
 
-        $containerProfiles = $nextDeployment->container_profiles;
+        $containerProfiles = $this->sortContainerProfiles($nextDeployment->container_profiles);
 
         $rows = [];
         $cpuTypeOption = $input->getOption('cpu-type');
