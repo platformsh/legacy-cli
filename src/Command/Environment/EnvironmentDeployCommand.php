@@ -25,7 +25,7 @@ class EnvironmentDeployCommand extends CommandBase
             ->setName('environment:deploy')
             ->setAliases(['env:deploy'])
             ->setDescription('Deploy an environment\'s staged changes')
-            ->addOption('strategy', 's', InputOption::VALUE_REQUIRED,
+            ->addHiddenOption('strategy', 's', InputOption::VALUE_REQUIRED,
                 'The deployment strategy, stopstart (default, restart with a shutdown) or rolling (zero downtime)');
         $this->addProjectOption()
             ->addEnvironmentOption();
