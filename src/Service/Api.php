@@ -23,6 +23,7 @@ use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\AutoscalingSettings;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
@@ -1766,7 +1767,7 @@ class Api
      * @return string|false
      *   The url to the autoscaling settings endpoint or false on failure.
      */
-    public function getAutoscalingSettingsLink(Environment $environment, bool $manage = false)
+    public function getAutoscalingSettingsLink(Environment $environment, $manage = false)
     {
         $link = "#autoscaling";
         if ($manage === true) {
@@ -1798,13 +1799,35 @@ class Api
     public function getAutoscalingSettings(Environment $environment)
     {
         try {
-            $settings = $environment->getAutoscalingSettings();
+            $result = $environment->runOperation('autoscaling', 'get');
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->status === 'inactive') {
                 throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
             }
             throw $e;
         }
-        return $settings;
+        return new AutoscalingSettings($result->getData(), null, $environment->client);
+    }
+
+    /**
+     * Configures the autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     * @param AutoscalingSettings $settings
+     */
+    public function setAutoscalingSettings(Environment $environment, array $settings)
+    {
+        if (!$this->getAutoscalingSettingsLink($environment, $manage=true)) {
+            throw new EnvironmentStateException('Not enough permissions to configure autoscaling on the environment', $environment);
+        }
+
+        try {
+            $result = $environment->runOperation('manage-autoscaling', 'patch', $settings);
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            throw $e;
+        }
     }
 }
