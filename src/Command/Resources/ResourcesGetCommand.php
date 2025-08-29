@@ -98,10 +98,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
 
         $rows = [];
         $cpuTypeOption = $input->getOption('cpu-type');
+        $autoscalingIndicator = '<comment>(A)</comment>';
+        $hasAutoscalingIndicator = false;
         foreach ($services as $name => $service) {
             $properties = $service->getProperties();
-            if (!empty($autoscalingEnabled[$name])) {
-                $name .= ' <fg=red>(A)</>';
+            if (!$table->formatIsMachineReadable() && !empty($autoscalingEnabled[$name])) {
+                $name .= ' ' . $autoscalingIndicator;
+                $hasAutoscalingIndicator = true;
             }
             $row = [
                 'service' => $name,
@@ -154,9 +157,11 @@ class ResourcesGetCommand extends ResourcesCommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        $this->stdErr->writeln("<info><fg=red>(A)</></info> - Indicates that the service has autoscaling enabled\n");
-
         if (!$table->formatIsMachineReadable()) {
+            if ($hasAutoscalingIndicator) {
+                $this->stdErr->writeln($autoscalingIndicator . ' - Indicates that the service has autoscaling enabled');
+            }
+
             $executable = $this->config()->get('application.executable');
             $isOriginalCommand = $input instanceof ArgvInput;
             if ($isOriginalCommand) {
