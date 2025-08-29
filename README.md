@@ -67,7 +67,7 @@ There are two ways to authenticate:
 
 1. The recommended way is `platform login`, which lets you log in via a web browser, including via third-party providers such as Google, GitHub, GitLab and Bitbucket.
 
-2. If using a browser is not possible, use an [API token](https://docs.platform.sh/gettingstarted/cli/api-tokens.html).
+2. If using a browser is not possible, use an [API token](https://docs.upsun.com/anchors/fixed/cli/api-token/).
 
     An interactive command is available for this: `platform auth:api-token-login`
 
