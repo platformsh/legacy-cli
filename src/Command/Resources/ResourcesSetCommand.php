@@ -52,7 +52,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             '',
             'If the same service and resource is specified on the command line multiple times, only the final value will be used.',
             '',
-            sprintf('You can also configure autoscaling, by running: <info>%s autoscaling:set</info>command.', $this->config()->get('application.executable'))
+            sprintf('You can also configure autoscaling by running: <info>%s autoscaling:set</info>', $this->config()->get('application.executable'))
         ];
         if ($this->config()->has('service.resources_help_url')) {
             $helpLines[] = '';

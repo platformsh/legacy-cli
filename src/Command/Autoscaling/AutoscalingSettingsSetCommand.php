@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Autoscaling;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Exception\EnvironmentStateException;
-use Platformsh\Client\Model\AutoscalingSettings;
 use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Deployment\Worker;
@@ -37,7 +36,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $helpLines = [
             'Configure automatic scaling for apps or workers in an environment.',
             '',
-            sprintf('You can also configure resources statically, by running: <info>%s resources:set</info>.', $this->config()->get('application.executable'))
+            sprintf('You can also configure resources statically by running: <info>%s resources:set</info>.', $this->config()->get('application.executable'))
         ];
         if ($this->config()->has('service.autoscaling_help_url')) {
             $helpLines[] = '';
@@ -281,7 +280,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         } else {
             // Interactive mode: let user select services and configure them
             if ($service === null) {
-                $this->stdErr->writeln('<error>The --service options is required when not running interactively.</error>');
+                $this->stdErr->writeln('<error>The --service option is required when not running interactively.</error>');
                 return 1;
             }
 
@@ -354,8 +353,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('Setting the autoscaling configuration on the environment ' . $this->api()->getEnvironmentLabel($environment));
 
-        $settings = $this->makeAutoscalingSettings($updates);
-        $settings = $this->api()->setAutoscalingSettings($environment, $settings);
+        $data = $this->makeAutoscalingSettingsData($updates);
+        $this->api()->setAutoscalingSettings($environment, $data);
 
         return 0;
     }
@@ -366,9 +365,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @param array $updates
      *
-     * @return AutoscalingSettings
+     * @return array
      */
-    protected function makeAutoscalingSettings($updates)
+    protected function makeAutoscalingSettingsData($updates)
     {
         $data = array('services' => []);
 
@@ -427,7 +426,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $data['services'][$service] = $serviceData;
         }
 
-        return new AutoscalingSettings($data);
+        return $data;
     }
 
 
@@ -435,6 +434,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      * Summarizes all the changes that would be made.
      *
      * @param array $updates
+     * @param array $settings
      *
      * @return void
      */
@@ -455,7 +455,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return void
      */
-    private function summarizeChangesPerService($name, array $current, $updates)
+    private function summarizeChangesPerService($name, array $current, array $updates)
     {
         $this->stdErr->writeln(sprintf('  <options=bold>Service: </><options=bold,underscore>%s</>', $name));
 
@@ -477,7 +477,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (isset($updates['duration-up'])) {
             $this->stdErr->writeln('    Duration (up): ' . $this->formatDurationChange(
                 $current['triggers'][$metric]['up'] ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
-                $updates['duration-up']
+                $this->formatDuration($updates['duration-up'])
             ));
         }
         if (isset($updates['threshold-down'])) {
@@ -489,20 +489,20 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (isset($updates['duration-down'])) {
             $this->stdErr->writeln('    Duration (down): ' . $this->formatDurationChange(
                 $current['triggers'][$metric]['down'] ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
-                $updates['duration-down']
+                $this->formatDuration($updates['duration-down'])
             ));
         }
 
         if (isset($updates['cooldown-up'])) {
             $this->stdErr->writeln('    Cooldown (up): ' . $this->formatDurationChange(
                 $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['up']) : null,
-                $updates['cooldown-up']
+                $this->formatDuration($updates['cooldown-up'])
             ));
         }
         if (isset($updates['cooldown-down'])) {
             $this->stdErr->writeln('    Cooldown (down): ' . $this->formatDurationChange(
                 $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['down']) : null,
-                $updates['cooldown-down']
+                $this->formatDuration($updates['cooldown-down'])
             ));
         }
 
@@ -637,7 +637,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
     {
         if (!isset(self::$validDurations[$value])) {
             $durations = array_keys(self::$validDurations);
-            $message = sprintf('Invalid duration <error>%s</error>: must be one of %s', $value, implode(', ',$durations));
+            $message = sprintf('Invalid duration <error>%s</error>: must be one of %s', $value, implode(', ', $durations));
             if ($context) {
                 $message .= sprintf(' for %s', $context);
             }
@@ -738,7 +738,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             return sprintf('<info>%s%s</info>', $newValue, $suffix);
         }
         if ($comparator !== null) {
-            $changeText = $comparator($newValue, $previousValue) ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>';
+            $changeText = $comparator($previousValue, $newValue) ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>';
         } else if ($newValue === "true" || $newValue === "false") {
             $color = $newValue === "true" ? 'green' : 'yellow';
             $changeText = '<fg=' . $color . '>changing</>';
