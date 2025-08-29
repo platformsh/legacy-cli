@@ -1799,14 +1799,14 @@ class Api
     public function getAutoscalingSettings(Environment $environment)
     {
         try {
-            $settings = $environment->getAutoscalingSettings();
+            $result = $environment->runOperation('autoscaling', 'get');
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->status === 'inactive') {
                 throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
             }
             throw $e;
         }
-        return $settings;
+        return new AutoscalingSettings($result->getData(), null, $environment->client);
     }
 
     /**
@@ -1814,23 +1814,20 @@ class Api
      *
      * @param Environment $environment
      * @param AutoscalingSettings $settings
-     *
-     * @return \Platformsh\Client\Model\AutoscalingSettings
      */
-    public function setAutoscalingSettings(Environment $environment, AutoscalingSettings $settings)
+    public function setAutoscalingSettings(Environment $environment, array $settings)
     {
         if (!$this->getAutoscalingSettingsLink($environment, $manage=true)) {
             throw new EnvironmentStateException('Not enough permissions to configure autoscaling on the environment', $environment);
         }
 
         try {
-            $settings = $environment->setAutoscalingSettings($settings);
+            $result = $environment->runOperation('manage-autoscaling', 'patch', $settings);
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->status === 'inactive') {
                 throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
             }
             throw $e;
         }
-        return $settings;
     }
 }

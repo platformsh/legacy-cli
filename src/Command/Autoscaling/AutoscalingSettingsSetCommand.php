@@ -354,8 +354,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('Setting the autoscaling configuration on the environment ' . $this->api()->getEnvironmentLabel($environment));
 
-        $settings = $this->makeAutoscalingSettings($updates);
-        $settings = $this->api()->setAutoscalingSettings($environment, $settings);
+        $data = $this->makeAutoscalingSettingsData($updates);
+        $settings = $this->api()->setAutoscalingSettings($environment, $data);
 
         return 0;
     }
@@ -366,9 +366,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @param array $updates
      *
-     * @return AutoscalingSettings
+     * @return array
      */
-    protected function makeAutoscalingSettings($updates)
+    protected function makeAutoscalingSettingsData($updates)
     {
         $data = array('services' => []);
 
@@ -427,7 +427,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $data['services'][$service] = $serviceData;
         }
 
-        return new AutoscalingSettings($data);
+        return $data;
     }
 
 
