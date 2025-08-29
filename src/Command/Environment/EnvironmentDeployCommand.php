@@ -86,8 +86,9 @@ class EnvironmentDeployCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
 
         $strategy = $input->getOption('strategy');
+        $can_rolling_deploy = $environment->getProperty('can_rolling_deploy', false);
         if (is_null($strategy)) {
-            if ($environment->can_rolling_deploy) {
+            if ($can_rolling_deploy) {
                 $options = [
                     'stopstart' => 'Restart with a shutdown',
                     'rolling' => 'Zero downtime deployment'
@@ -100,7 +101,7 @@ class EnvironmentDeployCommand extends CommandBase
             if (!in_array($strategy, ['stopstart', 'rolling'])) {
                 $this->stdErr->writeln('The chosen strategy is not available for this environment.');
                 return 1;
-            } elseif (!$environment->can_rolling_deploy && $strategy === 'rolling') {
+            } elseif (!$can_rolling_deploy && $strategy === 'rolling') {
                 $this->stdErr->writeln('The chosen strategy is not available for this environment.');
                 return 1;
             }
