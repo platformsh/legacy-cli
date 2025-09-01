@@ -1893,7 +1893,7 @@ class Api
      */
     public function environmentHasGuaranteedCPU(Environment $environment)
     {
-        $nextDeployment = $this->loadNextDeployment($environment);
+        $deployment = $this->getCurrentDeployment($environment);
         if ($this->supportsGuaranteedCPU($nextDeployment->project_info)) {
             $containerProfiles = $nextDeployment->container_profiles;
             $services = $this->allServices($nextDeployment);
