@@ -1894,9 +1894,9 @@ class Api
     public function environmentHasGuaranteedCPU(Environment $environment)
     {
         $deployment = $this->getCurrentDeployment($environment);
-        if ($this->supportsGuaranteedCPU($nextDeployment->project_info)) {
-            $containerProfiles = $nextDeployment->container_profiles;
-            $services = $this->allServices($nextDeployment);
+        if ($this->supportsGuaranteedCPU($deployment->project_info)) {
+            $containerProfiles = $deployment->container_profiles;
+            $services = $this->allServices($deployment);
             foreach ($services as $service) {
                 $properties = $service->getProperties();
                 if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {

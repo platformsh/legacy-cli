@@ -399,6 +399,9 @@ warnings:
   # The message shown when configuring guaranteed resources.
   guaranteed_resources_msg: null
 
+  # The message shown when branching/activating an environment with resources init strategy parent.
+  guaranteed_resources_branch_msg: null
+
 # Configuration for informational messages.
 messages:
   # A message about discounts where a region choice is displayed.

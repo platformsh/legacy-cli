@@ -81,3 +81,6 @@ warnings:
     This change may affect resource costs. See: <info>https://upsun.com/pricing/</info>
 
     This process requires a redeployment of containers on their own host, which may take a few minutes to complete.
+
+  guaranteed_resources_branch_msg: |
+    Guaranteed resources from the parent will be provisioned, impacting your bill.
