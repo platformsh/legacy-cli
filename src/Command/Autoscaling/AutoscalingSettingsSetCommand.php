@@ -184,75 +184,88 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 // Ask for metric name
                 $choices = array_keys($defaults['triggers']);
                 $default = $choices[0];
-                $text = 'Enter the metric name for autoscaling:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $text = 'Which metric should be used for autoscaling?' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, 0);
                 $metric = $choices[$choice];
             }
 
-            if ($thresholdUp === null) {
-                // Ask for scaling up threshold
-                $default = $defaults['triggers'][$metric]['up']['threshold'];
-                $thresholdUp = $questionHelper->askInput('Enter the threshold for scaling up', $default, [], function ($value) {
-                    return $this->validateThreshold($value);
-                });
+            if ($thresholdUp === null || $durationUp === null || $cooldownUp === null) {
+                $text = '<options=underscore>Settings for scaling <options=bold,underscore>up</></>';
+                $this->stdErr->writeln($text);
                 $this->stdErr->writeln('');
-            }
-            $updates[$service]['threshold-up'] = $thresholdUp;
 
-            if ($durationUp === null) {
-                // Ask for scaling up duration
-                $choices = array_keys(self::$validDurations);
-                $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
-                $default = array_search($this->formatDuration($defaultDuration), $choices);
-                $text = 'Enter the duration for scaling up evaluation:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $default);
-                $durationUp = $this->validateDuration($choices[$choice]);
-            }
-            $updates[$service]['duration-up'] = $durationUp;
+                if ($thresholdUp === null) {
+                    // Ask for scaling up threshold
+                    $default = $defaults['triggers'][$metric]['up']['threshold'];
+                    $thresholdUp = $questionHelper->askInput('Enter the threshold', $default, [], function ($value) {
+                        return $this->validateThreshold($value);
+                    });
+                    $this->stdErr->writeln('');
+                }
+                $updates[$service]['threshold-up'] = $thresholdUp;
 
-            if ($cooldownUp === null) {
-                // Ask for cool down period durations
-                $choices = array_flip(self::$validDurations);
-                $defaultDuration = $defaults['scale_cooldown']['up'];
-                $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
-                $cooldownUp = $this->validateDuration($choices[$choice]);
-            }
-            $updates[$service]['cooldown-up'] = $cooldownUp;
+                if ($durationUp === null) {
+                    // Ask for scaling up duration
+                    $choices = array_keys(self::$validDurations);
+                    $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
+                    $default = array_search($this->formatDuration($defaultDuration), $choices);
+                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $default);
+                    $durationUp = $this->validateDuration($choices[$choice]);
+                }
+                $updates[$service]['duration-up'] = $durationUp;
 
-            if ($thresholdDown === null) {
-                // Ask for scaling down threshold
-                $default = $defaults['triggers'][$metric]['down']['threshold'];
-                $thresholdDown = $questionHelper->askInput('Enter the threshold for scaling down', $default, [], function ($value) {
-                    return $this->validateThreshold($value);
-                });
+                if ($cooldownUp === null) {
+                    // Ask for cool down period durations
+                    $choices = array_flip(self::$validDurations);
+                    $defaultDuration = $defaults['scale_cooldown']['up'];
+                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $defaultDuration);
+                    $cooldownUp = $this->validateDuration($choices[$choice]);
+                }
+                $updates[$service]['cooldown-up'] = $cooldownUp;
+            }
+
+
+            if ($thresholdDown === null || $durationDown === null || $cooldownDown === null) {
+                $text = '<options=underscore>Settings for scaling <options=bold,underscore>down</></>';
+                $this->stdErr->writeln($text);
                 $this->stdErr->writeln('');
-            }
-            $updates[$service]['threshold-down'] = $thresholdDown;
 
-            if ($durationDown === null) {
-                // Ask for scaling down duration
-                $choices = array_keys(self::$validDurations);
-                $defaultDuration = $defaults['triggers'][$metric]['down']['duration'];
-                $default = array_search($this->formatDuration($defaultDuration), $choices);
-                $text = 'Enter the duration for scaling down evaluation:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $default);
-                $durationDown = $this->validateDuration($choices[$choice]);
-            }
-            $updates[$service]['duration-down'] = $durationDown;
+                if ($thresholdDown === null) {
+                    // Ask for scaling down threshold
+                    $default = $defaults['triggers'][$metric]['down']['threshold'];
+                    $thresholdDown = $questionHelper->askInput('Enter the threshold', $default, [], function ($value) {
+                        return $this->validateThreshold($value);
+                    });
+                    $this->stdErr->writeln('');
+                }
+                $updates[$service]['threshold-down'] = $thresholdDown;
 
-            if ($cooldownDown === null) {
-                $choices = array_flip(self::$validDurations);
-                $defaultDuration = $defaults['scale_cooldown']['down'];
-                $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
-                $cooldownDown = $this->validateDuration($choices[$choice]);
+                if ($durationDown === null) {
+                    // Ask for scaling down duration
+                    $choices = array_keys(self::$validDurations);
+                    $defaultDuration = $defaults['triggers'][$metric]['down']['duration'];
+                    $default = array_search($this->formatDuration($defaultDuration), $choices);
+                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $default);
+                    $durationDown = $this->validateDuration($choices[$choice]);
+                }
+                $updates[$service]['duration-down'] = $durationDown;
+
+                if ($cooldownDown === null) {
+                    $choices = array_flip(self::$validDurations);
+                    $defaultDuration = $defaults['scale_cooldown']['down'];
+                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $defaultDuration);
+                    $cooldownDown = $this->validateDuration($choices[$choice]);
+                }
+                $updates[$service]['cooldown-down'] = $cooldownDown;
             }
-            $updates[$service]['cooldown-down'] = $cooldownDown;
 
             if ($enabled === null) {
                 // Ask for enabling autoscaling based on this metric
-                $value = $questionHelper->confirm(sprintf('Enable autoscaling based on <options=bold,underscore>%s</>?', $metric), true);
+                $value = $questionHelper->confirm(sprintf('Enable autoscaling based on <info>%s</>?', $metric), true);
                 $enabled = $this->validateBoolean($value);
                 $this->stdErr->writeln('');
             }
@@ -460,10 +473,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
      */
     private function summarizeChangesPerService($name, $current, array $updates)
     {
-        $this->stdErr->writeln(sprintf('  <options=bold>Service: </><options=bold,underscore>%s</>', $name));
+        $this->stdErr->writeln(sprintf('  <options=bold>Service: </><info>%s</info>', $name));
 
         $metric = $updates['metric'];
-        $this->stdErr->writeln(sprintf('  Metric: %s', $metric));
+        $this->stdErr->writeln(sprintf('  Metric: <info>%s</info>', $metric));
 
         if (isset($updates['enabled'])) {
             $this->stdErr->writeln('    Enabled: ' . $this->formatChange(
@@ -471,55 +484,65 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $this->formatBoolean($updates['enabled'])
             ));
         }
-        if (isset($updates['threshold-up'])) {
-            $this->stdErr->writeln('    Threshold (up): ' . $this->formatChange(
-                isset($current['triggers'][$metric]['up']) ? $current['triggers'][$metric]['up']['threshold'] : null,
-                $updates['threshold-up']
-            ));
-        }
-        if (isset($updates['duration-up'])) {
-            $this->stdErr->writeln('    Duration (up): ' . $this->formatDurationChange(
-                isset($current['triggers'][$metric]['up']) ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
-                $this->formatDuration($updates['duration-up'])
-            ));
-        }
-        if (isset($updates['cooldown-up'])) {
-            $this->stdErr->writeln('    Cooldown (up): ' . $this->formatDurationChange(
-                isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['up']) : null,
-                $this->formatDuration($updates['cooldown-up'])
-            ));
+        if (isset($updates['threshold-up']) || isset($updates['duration-up']) || isset($updates['cooldown-up'])) {
+            $this->stdErr->writeln('    Scaling <options=bold>up</>');
+
+            if (isset($updates['threshold-up'])) {
+                $this->stdErr->writeln('      Threshold: ' . $this->formatChange(
+                    isset($current['triggers'][$metric]['up']) ? $current['triggers'][$metric]['up']['threshold'] : null,
+                    $updates['threshold-up']
+                ));
+            }
+            if (isset($updates['duration-up'])) {
+                $this->stdErr->writeln('      Duration: ' . $this->formatDurationChange(
+                    isset($current['triggers'][$metric]['up']) ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
+                    $this->formatDuration($updates['duration-up'])
+                ));
+            }
+            if (isset($updates['cooldown-up'])) {
+                $this->stdErr->writeln('      Cooldown: ' . $this->formatDurationChange(
+                    isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['up']) : null,
+                    $this->formatDuration($updates['cooldown-up'])
+                ));
+            }
         }
 
-        if (isset($updates['threshold-down'])) {
-            $this->stdErr->writeln('    Threshold (down): ' . $this->formatChange(
+        if (isset($updates['threshold-down']) || isset($updates['duration-down']) || isset($updates['cooldown-down'])) {
+            $this->stdErr->writeln('    Scaling <options=bold>down</>');
+
+            $this->stdErr->writeln('      Threshold: ' . $this->formatChange(
                 isset($current['triggers'][$metric]['down']) ? $current['triggers'][$metric]['down']['threshold'] : null,
                 $updates['threshold-down']
             ));
-        }
-        if (isset($updates['duration-down'])) {
-            $this->stdErr->writeln('    Duration (down): ' . $this->formatDurationChange(
-                isset($current['triggers'][$metric]['down']) ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
-                $this->formatDuration($updates['duration-down'])
-            ));
-        }
-        if (isset($updates['cooldown-down'])) {
-            $this->stdErr->writeln('    Cooldown (down): ' . $this->formatDurationChange(
-                isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['down']) : null,
-                $this->formatDuration($updates['cooldown-down'])
-            ));
+            if (isset($updates['duration-down'])) {
+                $this->stdErr->writeln('      Duration: ' . $this->formatDurationChange(
+                    isset($current['triggers'][$metric]['down']) ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
+                    $this->formatDuration($updates['duration-down'])
+                ));
+            }
+            if (isset($updates['cooldown-down'])) {
+                $this->stdErr->writeln('      Cooldown: ' . $this->formatDurationChange(
+                    isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['down']) : null,
+                    $this->formatDuration($updates['cooldown-down'])
+                ));
+            }
         }
 
-        if (isset($updates['instances-min'])) {
-            $this->stdErr->writeln('    Instances (min): ' . $this->formatChange(
-                isset($current['instances']) ? $current['instances']['min'] : null,
-                $updates['instances-min']
-            ));
-        }
-        if (isset($updates['instances-max'])) {
-            $this->stdErr->writeln('    Instances (max): ' . $this->formatChange(
-                isset($current['instances']) ? $current['instances']['max'] : null,
-                $updates['instances-max']
-            ));
+        if (isset($updates['instances-min']) || isset($updates['instances-max'])) {
+            $this->stdErr->writeln('    Instances');
+            if (isset($updates['instances-min'])) {
+                $this->stdErr->writeln('      Min: ' . $this->formatChange(
+                    isset($current['instances']) ? $current['instances']['min'] : null,
+                    $updates['instances-min']
+                ));
+            }
+
+            if (isset($updates['instances-max'])) {
+                $this->stdErr->writeln('      Max: ' . $this->formatChange(
+                    isset($current['instances']) ? $current['instances']['max'] : null,
+                    $updates['instances-max']
+                ));
+            }
         }
     }
 
