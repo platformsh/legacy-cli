@@ -36,7 +36,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $helpLines = [
             'Configure automatic scaling for apps or workers in an environment.',
             '',
-            sprintf('You can also configure resources statically by running: <info>%s resources:set</info>.', $this->config()->get('application.executable'))
+            sprintf('You can also configure resources statically by running: <info>%s resources:set</info>', $this->config()->get('application.executable'))
         ];
         if ($this->config()->has('service.autoscaling_help_url')) {
             $helpLines[] = '';
