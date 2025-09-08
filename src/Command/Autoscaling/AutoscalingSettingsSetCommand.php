@@ -143,8 +143,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $instancesMax = $this->validateInstanceCount($instancesMax, $instanceLimit, 'instances-max');
         }
 
-        $this->stdErr->writeln('');
-
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -340,8 +338,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
             }
 
         }
-
-        $this->stdErr->writeln('');
 
         if (empty($updates)) {
             $this->stdErr->writeln('No autoscaling changes were provided: nothing to update');
