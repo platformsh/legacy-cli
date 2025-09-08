@@ -489,13 +489,14 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $this->stdErr->writeln(sprintf('  Metric: <info>%s</info>', $metric));
 
         $action = 'remain';
+        $enabledNewText = $current['triggers'][$metric]['enabled'] ? 'enabled' : 'disabled';
         if (isset($updates['enabled'])) {
             if ($current['triggers'][$metric]['enabled'] != $updates['enabled']) {
                 $action = 'become';
+                $enabledNewText = $updates['enabled'] ? 'enabled' : 'disabled';
             }
         }
-        $enabledNewText = $updates['enabled'] ? 'enabled' : 'disabled';
-        $color = $updates['enabled'] ? 'green' : 'yellow';
+        $color = $enabledNewText == 'enabled' ? 'green' : 'yellow';
         $status = '<fg=' . $color . '>'.$enabledNewText.'</>';
         $this->stdErr->writeln('    Autoscaling will ' . $action .  ': ' . $status);
 
