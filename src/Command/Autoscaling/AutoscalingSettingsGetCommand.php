@@ -53,7 +53,12 @@ class AutoscalingSettingsGetCommand extends CommandBase
             throw $e;
         }
 
-        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment)->getData();
+        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment);
+        if (!$autoscalingSettings) {
+            $this->stdErr->writeln(\sprintf('Autoscaling support is not currently available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            return 1;
+        }
+        $autoscalingSettings = $autoscalingSettings->getData();
 
         $services = array_merge($deployment->webapps, $deployment->workers);
         if (empty($services)) {

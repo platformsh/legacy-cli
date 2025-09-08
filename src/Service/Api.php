@@ -1780,8 +1780,6 @@ class Api
 
         $environmentData = $environment->getData();
         if (!isset($environmentData['_links'][$link])) {
-            $this->stdErr->writeln(\sprintf('Autoscaling support is not currently available on the environment: %s', $this->getEnvironmentLabel($environment, 'error')));
-
             return false;
         }
         if (!isset($environmentData['_links'][$link]['href'])) {
@@ -1798,19 +1796,25 @@ class Api
      *
      * @param Environment $environment
      *
-     * @return \Platformsh\Client\Model\AutoscalingSettings
+     * @return \Platformsh\Client\Model\AutoscalingSettings|false
+     *  The autoscaling settings for the environment or false on failure.
      */
     public function getAutoscalingSettings(Environment $environment)
     {
+        $autoscalingSettingsLink = $this->getAutoscalingSettingsLink($environment);
+        if (!$autoscalingSettingsLink) {
+            return false;
+        }
+
         try {
             $result = $environment->runOperation('autoscaling', 'get');
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->status === 'inactive') {
                 throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
             }
-            throw $e;
+            return false;
         }
-        return new AutoscalingSettings($result->getData(), $this->getAutoscalingSettingsLink($environment));
+        return new AutoscalingSettings($result->getData(), $autoscalingSettingsLink);
     }
 
     /**

@@ -74,11 +74,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
-        // Check autoscaling settings for the environment, as autoscaling prevents changing some resources manually.
-        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment)->getData();
         $autoscalingEnabled = [];
-        foreach ($autoscalingSettings['services'] as $service => $serviceSettings) {
-            $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+        // Check autoscaling settings for the environment, as autoscaling prevents changing some resources manually.
+        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment);
+        if ($autoscalingSettings) {
+            foreach ($autoscalingSettings->getData()['services'] as $service => $serviceSettings) {
+                $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+            }
         }
 
         /** @var Table $table */
