@@ -148,13 +148,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
         // Check if we should show the interactive form
         $hasAnyOptions = $service !== null
-            || $metric !== null
-            || $enabled !== null
             || $thresholdUp !== null
-            || $thresholdDown !== null
             || $durationUp !== null
-            || $durationDown !== null
             || $cooldownUp !== null
+            || $thresholdDown !== null
+            || $durationDown !== null
             || $cooldownDown !== null
             || $instancesMin !== null
             || $instancesMax !== null;
