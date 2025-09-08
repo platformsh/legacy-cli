@@ -47,6 +47,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $this->addExample('Enable autoscaling for an application using the default configuration', '--service app --metric cpu');
         $this->addExample('Enable autoscaling for an application specifying a minimum of instances at all times', '--service app --metric cpu --instances-min 3');
         $this->addExample('Enable autoscaling for an application specifying a maximum of instances at most', '--service app --metric cpu --instances-max 5');
+        $this->addExample('Disable autoscaling on cpu for an application', '--service app --metric cpu --enabled false');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -263,14 +264,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $updates[$service]['cooldown-down'] = $cooldownDown;
             }
 
-            if ($enabled === null) {
-                // Ask for enabling autoscaling based on this metric
-                $value = $questionHelper->confirm(sprintf('Enable autoscaling based on <info>%s</>?', $metric), true);
-                $enabled = $this->validateBoolean($value);
-                $this->stdErr->writeln('');
-            }
-            $updates[$service]['enabled'] = $enabled;
-
             if ($instancesMin === null) {
                 // Ask for instance count limits
                 $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', 1, [], function ($value) use ($instanceLimit) {
@@ -287,6 +280,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $this->stdErr->writeln('');
             }
             $updates[$service]['instances-max'] = $instancesMax;
+
+            if ($enabled !== null) {
+                $updates[$service]['enabled'] = $enabled;
+            }
 
             if (!empty($updates[$service])) {
                 // since we have some changes, inject the metric name for them
@@ -478,12 +475,17 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $metric = $updates['metric'];
         $this->stdErr->writeln(sprintf('  Metric: <info>%s</info>', $metric));
 
+        $action = 'remain';
         if (isset($updates['enabled'])) {
-            $this->stdErr->writeln('    Enabled: ' . $this->formatChange(
-                isset($current['triggers'][$metric]) ? $this->formatBoolean($current['triggers'][$metric]['enabled']) : null,
-                $this->formatBoolean($updates['enabled'])
-            ));
+            if ($current['triggers'][$metric]['enabled'] != $updates['enabled']) {
+                $action = 'become';
+            }
         }
+        $enabledNewText = $updates['enabled'] ? 'enabled' : 'disabled';
+        $color = $updates['enabled'] ? 'green' : 'yellow';
+        $status = '<fg=' . $color . '>'.$enabledNewText.'</>';
+        $this->stdErr->writeln('    Autoscaling will ' . $action .  ': ' . $status);
+
         if (isset($updates['threshold-up']) || isset($updates['duration-up']) || isset($updates['cooldown-up'])) {
             $this->stdErr->writeln('    Scaling <options=bold>up</>');
 
