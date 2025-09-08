@@ -1771,7 +1771,7 @@ class Api
      * @return string|false
      *   The url to the autoscaling settings endpoint or false on failure.
      */
-    public function getAutoscalingSettingsLink(Environment $environment, bool $manage = false)
+    public function getAutoscalingSettingsLink(Environment $environment, $manage = false)
     {
         $link = "#autoscaling";
         if ($manage === true) {
@@ -1821,7 +1821,7 @@ class Api
      * Configures the autoscaling settings for the selected environment.
      *
      * @param Environment $environment
-     * @param AutoscalingSettings $settings
+     * @param array $settings
      */
     public function setAutoscalingSettings(Environment $environment, array $settings)
     {
@@ -1830,7 +1830,7 @@ class Api
         }
 
         try {
-            $result = $environment->runOperation('manage-autoscaling', 'patch', $settings);
+            $environment->runOperation('manage-autoscaling', 'patch', $settings);
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->status === 'inactive') {
                 throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());

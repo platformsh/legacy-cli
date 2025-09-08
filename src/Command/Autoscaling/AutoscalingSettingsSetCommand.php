@@ -76,7 +76,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 
-
         $services = array_merge($deployment->webapps, $deployment->workers);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or workers found.');
