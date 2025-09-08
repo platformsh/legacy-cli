@@ -173,6 +173,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $service = $serviceNames[$selectedService];
             }
 
+            // Get autoscaling current values for selected service
+            $currentServiceSettings = $autoscalingSettings['services'][$service];
+
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold>' . ucfirst($this->typeName($services[$service])) . ': </><options=bold,underscore>' . $service . '</>');
             $this->stdErr->writeln('');
@@ -193,7 +196,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
                 if ($thresholdUp === null) {
                     // Ask for scaling up threshold
-                    $default = $defaults['triggers'][$metric]['up']['threshold'];
+                    $current = $currentServiceSettings['triggers'][$metric]['up']['threshold'];
+                    $default = !empty($current) ? $current : $defaults['triggers'][$metric]['up']['threshold'];
                     $thresholdUp = $questionHelper->askInput('Enter the threshold', $default, [], function ($value) {
                         return $this->validateThreshold($value);
                     });
@@ -205,9 +209,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     // Ask for scaling up duration
                     $choices = array_keys(self::$validDurations);
                     $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
-                    $default = array_search($this->formatDuration($defaultDuration), $choices);
-                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $default);
+                    $current = $currentServiceSettings['triggers'][$metric]['up']['duration'];
+                    $default = !empty($current) ? $current : $defaultDuration;
+                    $defaultChoice = array_search($this->formatDuration($default), $choices);
+                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $durationUp = $this->validateDuration($choices[$choice]);
                 }
                 $updates[$service]['duration-up'] = $durationUp;
@@ -216,8 +222,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     // Ask for cool down period durations
                     $choices = array_flip(self::$validDurations);
                     $defaultDuration = $defaults['scale_cooldown']['up'];
-                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $defaultDuration);
+                    $current = $currentServiceSettings['scale_cooldown']['up'];
+                    $default = !empty($current) ? $current : $defaultDuration;
+                    $defaultChoice = array_search($this->formatDuration($default), $choices);
+                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $cooldownUp = $this->validateDuration($choices[$choice]);
                 }
                 $updates[$service]['cooldown-up'] = $cooldownUp;
@@ -231,7 +240,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
                 if ($thresholdDown === null) {
                     // Ask for scaling down threshold
-                    $default = $defaults['triggers'][$metric]['down']['threshold'];
+                    $current = $currentServiceSettings['triggers'][$metric]['down']['threshold'];
+                    $default = !empty($current) ? $current : $defaults['triggers'][$metric]['down']['threshold'];
                     $thresholdDown = $questionHelper->askInput('Enter the threshold', $default, [], function ($value) {
                         return $this->validateThreshold($value);
                     });
@@ -243,9 +253,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     // Ask for scaling down duration
                     $choices = array_keys(self::$validDurations);
                     $defaultDuration = $defaults['triggers'][$metric]['down']['duration'];
-                    $default = array_search($this->formatDuration($defaultDuration), $choices);
-                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $default);
+                    $current = $currentServiceSettings['triggers'][$metric]['down']['duration'];
+                    $default = !empty($current) ? $current : $defaultDuration;
+                    $defaultChoice = array_search($this->formatDuration($default), $choices);
+                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $durationDown = $this->validateDuration($choices[$choice]);
                 }
                 $updates[$service]['duration-down'] = $durationDown;
@@ -253,8 +265,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 if ($cooldownDown === null) {
                     $choices = array_flip(self::$validDurations);
                     $defaultDuration = $defaults['scale_cooldown']['down'];
-                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $defaultDuration);
+                    $current = $currentServiceSettings['scale_cooldown']['down'];
+                    $default = !empty($current) ? $current : $defaultDuration;
+                    $defaultChoice = array_search($this->formatDuration($default), $choices);
+                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
+                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $cooldownDown = $this->validateDuration($choices[$choice]);
                 }
                 $updates[$service]['cooldown-down'] = $cooldownDown;
@@ -262,7 +277,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
             if ($instancesMin === null) {
                 // Ask for instance count limits
-                $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', 1, [], function ($value) use ($instanceLimit) {
+                $current = $currentServiceSettings['instances']['min'];
+                $default = !empty($current) ? $current : 1;
+                $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', $default, [], function ($value) use ($instanceLimit) {
                     return $this->validateInstanceCount($value, $instanceLimit);
                 });
                 $this->stdErr->writeln('');
@@ -270,7 +287,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $updates[$service]['instances-min'] = $instancesMin;
 
             if ($instancesMax === null) {
-                $instancesMax = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit, [], function ($value) use ($instanceLimit) {
+                $current = $currentServiceSettings['instances']['max'];
+                $default = !empty($current) ? $current : $instanceLimit;
+                $instancesMax = $questionHelper->askInput('Enter the maximum number of instances', $default, [], function ($value) use ($instanceLimit) {
                     return $this->validateInstanceCount($value, $instanceLimit);
                 });
                 $this->stdErr->writeln('');
