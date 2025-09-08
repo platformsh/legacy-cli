@@ -283,7 +283,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             }
 
         } else {
-            // Interactive mode: let user select services and configure them
+            // Non-interactive mode
             if ($service === null) {
                 $this->stdErr->writeln('<error>The --service option is required when not running interactively.</error>');
                 return 1;
