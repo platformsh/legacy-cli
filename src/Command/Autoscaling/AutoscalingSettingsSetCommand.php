@@ -22,10 +22,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
             ->addOption('metric', 'm', InputOption::VALUE_REQUIRED, 'Name of the metric to use for triggering autoscaling')
             ->addOption('enabled', null, InputOption::VALUE_REQUIRED, 'Enable autoscaling based on the given metric')
             ->addOption('threshold-up', null, InputOption::VALUE_REQUIRED, 'Threshold over which service will be scaled up')
-            ->addOption('threshold-down', null, InputOption::VALUE_REQUIRED, 'Threshold under which service will be scaled down')
             ->addOption('duration-up', null, InputOption::VALUE_REQUIRED, 'Duration over which metric is evaluated against threshold for scaling up')
-            ->addOption('duration-down', null, InputOption::VALUE_REQUIRED, 'Duration over which metric is evaluated against threshold for scaling down')
             ->addOption('cooldown-up', null, InputOption::VALUE_REQUIRED, 'Duration to wait before attempting to further scale up after a scaling event')
+            ->addOption('threshold-down', null, InputOption::VALUE_REQUIRED, 'Threshold under which service will be scaled down')
+            ->addOption('duration-down', null, InputOption::VALUE_REQUIRED, 'Duration over which metric is evaluated against threshold for scaling down')
             ->addOption('cooldown-down', null, InputOption::VALUE_REQUIRED, 'Duration to wait before attempting to further scale down after a scaling event')
             ->addOption('instances-min', null, InputOption::VALUE_REQUIRED, 'Minimum number of instances that will be scaled down to')
             ->addOption('instances-max', null, InputOption::VALUE_REQUIRED, 'Maximum number of instances that will be scaled up to')
@@ -103,30 +103,28 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $enabled = $this->validateBoolean($enabled);
         }
 
-        // Validate the --threshold-* options.
+        // Validate the --*-up options.
         $thresholdUp = $input->getOption('threshold-up');
         if ($thresholdUp !== null) {
             $thresholdUp = $this->validateThreshold($thresholdUp, 'threshold-up');
         }
-        $thresholdDown = $input->getOption('threshold-down');
-        if ($thresholdDown !== null) {
-            $thresholdDown = $this->validateThreshold($thresholdDown, 'threshold-down');
-        }
-
-        // Validate the --duration-* options.
         $durationUp = $input->getOption('duration-up');
         if ($durationUp !== null) {
             $durationUp = $this->validateDuration($durationUp);
         }
-        $durationDown = $input->getOption('duration-down');
-        if ($durationDown !== null) {
-            $durationDown = $this->validateDuration($durationDown);
-        }
-
-        // Validate the --cooldown-* options.
         $cooldownUp = $input->getOption('cooldown-up');
         if ($cooldownUp !== null) {
             $cooldownUp = $this->validateDuration($cooldownUp);
+        }
+
+        // Validate the --*-down options.
+        $thresholdDown = $input->getOption('threshold-down');
+        if ($thresholdDown !== null) {
+            $thresholdDown = $this->validateThreshold($thresholdDown, 'threshold-down');
+        }
+        $durationDown = $input->getOption('duration-down');
+        if ($durationDown !== null) {
+            $durationDown = $this->validateDuration($durationDown);
         }
         $cooldownDown = $input->getOption('cooldown-down');
         if ($cooldownDown !== null) {
@@ -212,6 +210,16 @@ class AutoscalingSettingsSetCommand extends CommandBase
             }
             $updates[$service]['duration-up'] = $durationUp;
 
+            if ($cooldownUp === null) {
+                // Ask for cool down period durations
+                $choices = array_flip(self::$validDurations);
+                $defaultDuration = $defaults['scale_cooldown']['up'];
+                $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
+                $cooldownUp = $this->validateDuration($choices[$choice]);
+            }
+            $updates[$service]['cooldown-up'] = $cooldownUp;
+
             if ($thresholdDown === null) {
                 // Ask for scaling down threshold
                 $default = $defaults['triggers'][$metric]['down']['threshold'];
@@ -232,6 +240,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $durationDown = $this->validateDuration($choices[$choice]);
             }
             $updates[$service]['duration-down'] = $durationDown;
+
+            if ($cooldownDown === null) {
+                $choices = array_flip(self::$validDurations);
+                $defaultDuration = $defaults['scale_cooldown']['down'];
+                $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
+                $cooldownDown = $this->validateDuration($choices[$choice]);
+            }
+            $updates[$service]['cooldown-down'] = $cooldownDown;
 
             if ($enabled === null) {
                 // Ask for enabling autoscaling based on this metric
@@ -257,25 +274,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $this->stdErr->writeln('');
             }
             $updates[$service]['instances-max'] = $instancesMax;
-
-            if ($cooldownUp === null) {
-                // Ask for cool down period durations
-                $choices = array_flip(self::$validDurations);
-                $defaultDuration = $defaults['scale_cooldown']['up'];
-                $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
-                $cooldownUp = $this->validateDuration($choices[$choice]);
-            }
-            $updates[$service]['cooldown-up'] = $cooldownUp;
-
-            if ($cooldownDown === null) {
-                $choices = array_flip(self::$validDurations);
-                $defaultDuration = $defaults['scale_cooldown']['down'];
-                $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
-                $cooldownDown = $this->validateDuration($choices[$choice]);
-            }
-            $updates[$service]['cooldown-down'] = $cooldownDown;
 
             if (!empty($updates[$service])) {
                 // since we have some changes, inject the metric name for them
@@ -485,6 +483,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $this->formatDuration($updates['duration-up'])
             ));
         }
+        if (isset($updates['cooldown-up'])) {
+            $this->stdErr->writeln('    Cooldown (up): ' . $this->formatDurationChange(
+                isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['up']) : null,
+                $this->formatDuration($updates['cooldown-up'])
+            ));
+        }
+
         if (isset($updates['threshold-down'])) {
             $this->stdErr->writeln('    Threshold (down): ' . $this->formatChange(
                 isset($current['triggers'][$metric]['down']) ? $current['triggers'][$metric]['down']['threshold'] : null,
@@ -495,13 +500,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $this->stdErr->writeln('    Duration (down): ' . $this->formatDurationChange(
                 isset($current['triggers'][$metric]['down']) ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
                 $this->formatDuration($updates['duration-down'])
-            ));
-        }
-
-        if (isset($updates['cooldown-up'])) {
-            $this->stdErr->writeln('    Cooldown (up): ' . $this->formatDurationChange(
-                isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['up']) : null,
-                $this->formatDuration($updates['cooldown-up'])
             ));
         }
         if (isset($updates['cooldown-down'])) {
