@@ -174,7 +174,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 // Ask user to select services to configure
                 $default = $serviceNames[0];
                 $text = 'Enter a number to choose an app or worker:' . "\n" . 'Default: <question>' . $default . '</question>';
-                $selectedService = $questionHelper->choose($serviceNames, $text);
+                $selectedService = $questionHelper->choose($serviceNames, $text, 0);
                 $service = $serviceNames[$selectedService];
             }
 
@@ -185,9 +185,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
             if ($metric === null) {
                 // Ask for metric name
                 $choices = array_keys($defaults['triggers']);
-                $default = key($choices);
+                $default = $choices[0];
                 $text = 'Enter the metric name for autoscaling:' . "\n" . 'Default: <question>' . $default . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $default);
+                $choice = $questionHelper->choose($choices, $text, 0);
                 $metric = $choices[$choice];
             }
 
@@ -206,7 +206,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $choices = array_keys(self::$validDurations);
                 $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
                 $default = array_search($this->formatDuration($defaultDuration), $choices);
-                $text = 'Enter the duration for scaling up evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $text = 'Enter the duration for scaling up evaluation:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
                 $durationUp = $this->validateDuration($choices[$choice]);
             }
@@ -227,7 +227,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $choices = array_keys(self::$validDurations);
                 $defaultDuration = $defaults['triggers'][$metric]['down']['duration'];
                 $default = array_search($this->formatDuration($defaultDuration), $choices);
-                $text = 'Enter the duration for scaling down evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $text = 'Enter the duration for scaling down evaluation:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
                 $durationDown = $this->validateDuration($choices[$choice]);
             }
@@ -260,19 +260,19 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
             if ($cooldownUp === null) {
                 // Ask for cool down period durations
-                $choices = array_keys(self::$validDurations);
-                $default = array_search($this->formatDuration($defaults['scale_cooldown']['up']), $choices);
-                $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $default . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $default);
+                $choices = array_flip(self::$validDurations);
+                $defaultDuration = $defaults['scale_cooldown']['up'];
+                $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
                 $cooldownUp = $this->validateDuration($choices[$choice]);
             }
             $updates[$service]['cooldown-up'] = $cooldownUp;
 
             if ($cooldownDown === null) {
-                $choices = array_keys(self::$validDurations);
-                $default = array_search($this->formatDuration($defaults['scale_cooldown']['down']), $choices);
-                $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $default . '</question>';
-                $choice = $questionHelper->choose($choices, $text, $default);
+                $choices = array_flip(self::$validDurations);
+                $defaultDuration = $defaults['scale_cooldown']['down'];
+                $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $this->formatDuration($defaultDuration) . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $defaultDuration);
                 $cooldownDown = $this->validateDuration($choices[$choice]);
             }
             $updates[$service]['cooldown-down'] = $cooldownDown;
