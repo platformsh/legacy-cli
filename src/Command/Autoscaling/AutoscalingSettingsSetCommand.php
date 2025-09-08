@@ -447,7 +447,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
     {
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
         foreach ($updates as $service => $serviceUpdates) {
-            $this->summarizeChangesPerService($service, $settings[$service], $serviceUpdates);
+            $this->summarizeChangesPerService($service, isset($settings[$service]) ? $settings[$service] : null, $serviceUpdates);
         }
     }
 
@@ -455,12 +455,12 @@ class AutoscalingSettingsSetCommand extends CommandBase
      * Summarizes changes per service.
      *
      * @param string $name The service name
-     * @param array $current
+     * @param array|null $current
      * @param array $updates
      *
      * @return void
      */
-    private function summarizeChangesPerService($name, array $current, array $updates)
+    private function summarizeChangesPerService($name, $current, array $updates)
     {
         $this->stdErr->writeln(sprintf('  <options=bold>Service: </><options=bold,underscore>%s</>', $name));
 
@@ -469,57 +469,57 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
         if (isset($updates['enabled'])) {
             $this->stdErr->writeln('    Enabled: ' . $this->formatChange(
-                $current['triggers'][$metric] ? $this->formatBoolean($current['triggers'][$metric]['enabled']) : null,
+                isset($current['triggers'][$metric]) ? $this->formatBoolean($current['triggers'][$metric]['enabled']) : null,
                 $this->formatBoolean($updates['enabled'])
             ));
         }
         if (isset($updates['threshold-up'])) {
             $this->stdErr->writeln('    Threshold (up): ' . $this->formatChange(
-                $current['triggers'][$metric]['up'] ? $current['triggers'][$metric]['up']['threshold'] : null,
+                isset($current['triggers'][$metric]['up']) ? $current['triggers'][$metric]['up']['threshold'] : null,
                 $updates['threshold-up']
             ));
         }
         if (isset($updates['duration-up'])) {
             $this->stdErr->writeln('    Duration (up): ' . $this->formatDurationChange(
-                $current['triggers'][$metric]['up'] ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
+                isset($current['triggers'][$metric]['up']) ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
                 $this->formatDuration($updates['duration-up'])
             ));
         }
         if (isset($updates['threshold-down'])) {
             $this->stdErr->writeln('    Threshold (down): ' . $this->formatChange(
-                $current['triggers'][$metric]['down'] ? $current['triggers'][$metric]['down']['threshold'] : null,
+                isset($current['triggers'][$metric]['down']) ? $current['triggers'][$metric]['down']['threshold'] : null,
                 $updates['threshold-down']
             ));
         }
         if (isset($updates['duration-down'])) {
             $this->stdErr->writeln('    Duration (down): ' . $this->formatDurationChange(
-                $current['triggers'][$metric]['down'] ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
+                isset($current['triggers'][$metric]['down']) ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
                 $this->formatDuration($updates['duration-down'])
             ));
         }
 
         if (isset($updates['cooldown-up'])) {
             $this->stdErr->writeln('    Cooldown (up): ' . $this->formatDurationChange(
-                $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['up']) : null,
+                isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['up']) : null,
                 $this->formatDuration($updates['cooldown-up'])
             ));
         }
         if (isset($updates['cooldown-down'])) {
             $this->stdErr->writeln('    Cooldown (down): ' . $this->formatDurationChange(
-                $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['down']) : null,
+                isset($current['scale_cooldown']) ? $this->formatDuration($current['scale_cooldown']['down']) : null,
                 $this->formatDuration($updates['cooldown-down'])
             ));
         }
 
         if (isset($updates['instances-min'])) {
             $this->stdErr->writeln('    Instances (min): ' . $this->formatChange(
-                $current['instances'] ? $current['instances']['min'] : null,
+                isset($current['instances']) ? $current['instances']['min'] : null,
                 $updates['instances-min']
             ));
         }
         if (isset($updates['instances-max'])) {
             $this->stdErr->writeln('    Instances (max): ' . $this->formatChange(
-                $current['instances'] ? $current['instances']['max'] : null,
+                isset($current['instances']) ? $current['instances']['max'] : null,
                 $updates['instances-max']
             ));
         }
