@@ -205,4 +205,18 @@ class ResourcesCommandBase extends CommandBase
     {
         return sprintf('%.1f', $unformatted);
     }
+
+    /**
+     * Check if project supports guaranteed resources.
+     *
+     * @param array $projectInfo
+     *
+     * @return bool
+     *  True if guaranteed CPU is supported, false otherwise.
+     */
+    protected function supportsGuaranteedCPU(array $projectInfo)
+    {
+        return !empty($projectInfo["settings"]["enable_guaranteed_resources"]) &&
+            !empty($projectInfo["capabilities"]["guaranteed_resources"]["enabled"]);
+    }
 }

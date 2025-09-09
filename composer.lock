@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9aa7432a5a81e5e0ca9114a9c76dd675",
+    "content-hash": "c051bb5371e52679c448b7768ceef028",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -921,16 +921,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "0.88.0",
+            "version": "0.90.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "5bd737d40743d97ab1883d6a6e762abddaa7b121"
+                "reference": "1bdce4b84912c563145a45120912186516f0857c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/5bd737d40743d97ab1883d6a6e762abddaa7b121",
-                "reference": "5bd737d40743d97ab1883d6a6e762abddaa7b121",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/1bdce4b84912c563145a45120912186516f0857c",
+                "reference": "1bdce4b84912c563145a45120912186516f0857c",
                 "shasum": ""
             },
             "require": {
@@ -962,9 +962,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.88.0"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.90.0"
             },
-            "time": "2025-05-14T14:08:57+00:00"
+            "time": "2025-08-07T16:00:58+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -4060,14 +4060,14 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
         "php": ">=5.5.9",
         "ext-json": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "5.5.9"
     },

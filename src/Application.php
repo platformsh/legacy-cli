@@ -125,6 +125,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\ApiTokenLoginCommand();
         $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Auth\VerifyPhoneNumberCommand();
+        $commands[] = new Command\Autoscaling\AutoscalingSettingsGetCommand();
         $commands[] = new Command\BlueGreen\BlueGreenConcludeCommand();
         $commands[] = new Command\BlueGreen\BlueGreenDeployCommand();
         $commands[] = new Command\BlueGreen\BlueGreenEnableCommand();
@@ -148,6 +149,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentCurlCommand();
         $commands[] = new Command\Environment\EnvironmentDeleteCommand();
         $commands[] = new Command\Environment\EnvironmentDeployCommand();
+        $commands[] = new Command\Environment\EnvironmentDeployTypeCommand();
         $commands[] = new Command\Environment\EnvironmentDrushCommand();
         $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
         $commands[] = new Command\Environment\EnvironmentListCommand();

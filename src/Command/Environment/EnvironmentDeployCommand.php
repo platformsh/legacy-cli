@@ -6,6 +6,7 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDeployCommand extends CommandBase
@@ -22,8 +23,10 @@ class EnvironmentDeployCommand extends CommandBase
     {
         $this
             ->setName('environment:deploy')
-            ->setAliases(['deploy'])
-            ->setDescription('Deploy an environment\'s staged changes');
+            ->setAliases(['e:deploy','env:deploy'])
+            ->setDescription('Deploy an environment\'s staged changes')
+            ->addOption('strategy', 's', InputOption::VALUE_REQUIRED,
+                'The deployment strategy, stopstart (default, restart with a shutdown) or rolling (zero downtime)');
         $this->addProjectOption()
             ->addEnvironmentOption();
         $this->addWaitOptions();
@@ -81,11 +84,36 @@ class EnvironmentDeployCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
+
+        $strategy = $input->getOption('strategy');
+        $can_rolling_deploy = $environment->getProperty('can_rolling_deploy', false);
+        if (is_null($strategy)) {
+            if ($can_rolling_deploy) {
+                $options = [
+                    'stopstart' => 'Restart with a shutdown',
+                    'rolling' => 'Zero downtime deployment'
+                ];
+                $strategy = $questionHelper->chooseAssoc($options, 'Choose the deployment strategy: ', 'stopstart');
+            } else {
+                $strategy = 'stopstart';
+            }
+        } else {
+            if (!in_array($strategy, ['stopstart', 'rolling'])) {
+                $this->stdErr->writeln('The chosen strategy is not available for this environment.');
+                return 1;
+            } elseif (!$can_rolling_deploy && $strategy === 'rolling') {
+                $this->stdErr->writeln('The chosen strategy is not available for this environment.');
+                return 1;
+            }
+        }
+        if ($strategy === 'rolling') {
+            $this->stdErr->writeln('Please make sure the changes from above are not affecting the state of the services.');
+        }
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 
-        $result = $environment->runOperation('deploy');
+        $result = $environment->runOperation('deploy', 'POST', ['strategy' => $strategy]);
 
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */

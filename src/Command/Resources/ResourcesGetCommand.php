@@ -16,6 +16,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'type' => 'Type',
         'profile' => 'Profile',
         'profile_size' => 'Size',
+        'cpu_type' => 'CPU type',
         'cpu' => 'CPU',
         'memory' => 'Memory (MB)',
         'disk' => 'Disk (MB)',
@@ -23,7 +24,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'base_memory' => 'Base memory',
         'memory_ratio' => 'Memory ratio',
     ];
-    protected $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
+    protected $defaultColumns = ['service', 'profile_size', 'cpu_type', 'cpu', 'memory', 'disk', 'instance_count'];
 
     protected function configure()
     {
@@ -33,7 +34,8 @@ class ResourcesGetCommand extends ResourcesCommandBase
             ->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service name. This can select any service, including apps and workers.')
             ->addOption('app', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by app name')
             ->addOption('worker', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by worker name')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service, app or worker type, e.g. "postgresql"');
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service, app or worker type, e.g. "postgresql"')
+            ->addOption('cpu-type', null, InputOption::VALUE_OPTIONAL, 'Filter by CPU type, e.g "guaranteed"');
         $this->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         if ($this->config()->has('service.resources_help_url')) {
@@ -72,6 +74,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
+        // Check autoscaling settings for the environment, as autoscaling prevents changing some resources manually.
+        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment)->getData();
+        $autoscalingEnabled = [];
+        foreach ($autoscalingSettings['services'] as $service => $serviceSettings) {
+            $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+        }
+
         /** @var Table $table */
         $table = $this->getService('table');
 
@@ -88,8 +97,15 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $containerProfiles = $nextDeployment->container_profiles;
 
         $rows = [];
+        $cpuTypeOption = $input->getOption('cpu-type');
+        $autoscalingIndicator = '<comment>(A)</comment>';
+        $hasAutoscalingIndicator = false;
         foreach ($services as $name => $service) {
             $properties = $service->getProperties();
+            if (!$table->formatIsMachineReadable() && !empty($autoscalingEnabled[$name])) {
+                $name .= ' ' . $autoscalingIndicator;
+                $hasAutoscalingIndicator = true;
+            }
             $row = [
                 'service' => $name,
                 'type' => $formatter->format($service->type, 'service_type'),
@@ -99,12 +115,18 @@ class ResourcesGetCommand extends ResourcesCommandBase
                 'memory_ratio' => $empty,
                 'disk' => $empty,
                 'instance_count' => $empty,
+                'cpu_type' => $empty,
                 'cpu' => $empty,
                 'memory' => $empty,
             ];
 
             if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {
                 $profileInfo = $containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']];
+                if ($cpuTypeOption != "" && isset($profileInfo['cpu_type']) && $profileInfo['cpu_type'] != $cpuTypeOption) {
+                    continue;
+                }
+
+                $row['cpu_type'] = isset($profileInfo['cpu_type']) ? $profileInfo['cpu_type'] : '';
                 $row['cpu'] = isset($profileInfo['cpu']) ? $this->formatCPU($profileInfo['cpu']) : '';
                 $row['memory'] = isset($profileInfo['cpu']) ? $profileInfo['memory'] : '';
             }
@@ -136,6 +158,10 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
+            if ($hasAutoscalingIndicator) {
+                $this->stdErr->writeln($autoscalingIndicator . ' - Indicates that the service has autoscaling enabled');
+            }
+
             $executable = $this->config()->get('application.executable');
             $isOriginalCommand = $input instanceof ArgvInput;
             if ($isOriginalCommand) {
