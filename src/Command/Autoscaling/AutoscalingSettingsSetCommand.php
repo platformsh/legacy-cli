@@ -204,14 +204,17 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
                 if ($thresholdUp === null) {
                     // Ask for scaling up threshold
-                    $current = $currentServiceSettings['triggers'][$metric]['up']['threshold'];
-                    $default = !empty($current) ? $current : $defaults['triggers'][$metric]['up']['threshold'];
+                    $current = isset($currentServiceSettings['triggers'][$metric]['up']['threshold'])
+                        ? $currentServiceSettings['triggers'][$metric]['up']['threshold'] : null;
+                    $default = isset($current) ? $current : $defaults['triggers'][$metric]['up']['threshold'];
                     $thresholdUp = $questionHelper->askInput('Enter the threshold', $default, [], function ($value) {
                         return $this->validateThreshold($value);
                     });
                     $this->stdErr->writeln('');
-                }
-                if ($thresholdUp !== $current) {
+                    if ($thresholdUp !== $current) {
+                        $updates[$service]['threshold-up'] = $thresholdUp;
+                    }
+                } else {
                     $updates[$service]['threshold-up'] = $thresholdUp;
                 }
 
@@ -219,14 +222,17 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     // Ask for scaling up duration
                     $choices = array_keys(self::$validDurations);
                     $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
-                    $current = $currentServiceSettings['triggers'][$metric]['up']['duration'];
-                    $default = !empty($current) ? $current : $defaultDuration;
+                    $current = isset($currentServiceSettings['triggers'][$metric]['up']['duration'])
+                        ? $currentServiceSettings['triggers'][$metric]['up']['duration'] : null;
+                    $default = isset($current) ? $current : $defaultDuration;
                     $defaultChoice = array_search($this->formatDuration($default), $choices);
                     $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $durationUp = $this->validateDuration($choices[$choice]);
-                }
-                if ($durationUp !== $current) {
+                    if ($durationUp !== $current) {
+                        $updates[$service]['duration-up'] = $durationUp;
+                    }
+                } else {
                     $updates[$service]['duration-up'] = $durationUp;
                 }
 
@@ -234,14 +240,17 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     // Ask for cool down period durations
                     $choices = array_flip(self::$validDurations);
                     $defaultDuration = $defaults['scale_cooldown']['up'];
-                    $current = $currentServiceSettings['scale_cooldown']['up'];
-                    $default = !empty($current) ? $current : $defaultDuration;
+                    $current = isset($currentServiceSettings['scale_cooldown']['up'])
+                        ? $currentServiceSettings['scale_cooldown']['up'] : null;
+                    $default = isset($current) ? $current : $defaultDuration;
                     $defaultChoice = array_search($this->formatDuration($default), $choices);
                     $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $cooldownUp = $this->validateDuration($choices[$choice]);
-                }
-                if ($cooldownUp !== $current) {
+                    if ($cooldownUp !== $current) {
+                        $updates[$service]['cooldown-up'] = $cooldownUp;
+                    }
+                } else {
                     $updates[$service]['cooldown-up'] = $cooldownUp;
                 }
             }
@@ -254,14 +263,17 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
                 if ($thresholdDown === null) {
                     // Ask for scaling down threshold
-                    $current = $currentServiceSettings['triggers'][$metric]['down']['threshold'];
-                    $default = !empty($current) ? $current : $defaults['triggers'][$metric]['down']['threshold'];
+                    $current = isset($currentServiceSettings['triggers'][$metric]['down']['threshold'])
+                        ? $currentServiceSettings['triggers'][$metric]['down']['threshold'] : null;
+                    $default = isset($current) ? $current : $defaults['triggers'][$metric]['down']['threshold'];
                     $thresholdDown = $questionHelper->askInput('Enter the threshold', $default, [], function ($value) {
                         return $this->validateThreshold($value);
                     });
                     $this->stdErr->writeln('');
-                }
-                if ($thresholdDown !== $current) {
+                    if ($thresholdDown !== $current) {
+                        $updates[$service]['threshold-down'] = $thresholdDown;
+                    }
+                } else {
                     $updates[$service]['threshold-down'] = $thresholdDown;
                 }
 
@@ -269,54 +281,66 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     // Ask for scaling down duration
                     $choices = array_keys(self::$validDurations);
                     $defaultDuration = $defaults['triggers'][$metric]['down']['duration'];
-                    $current = $currentServiceSettings['triggers'][$metric]['down']['duration'];
-                    $default = !empty($current) ? $current : $defaultDuration;
+                    $current = isset($currentServiceSettings['triggers'][$metric]['down']['duration'])
+                        ? $currentServiceSettings['triggers'][$metric]['down']['duration'] : null;
+                    $default = isset($current) ? $current : $defaultDuration;
                     $defaultChoice = array_search($this->formatDuration($default), $choices);
                     $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $durationDown = $this->validateDuration($choices[$choice]);
-                }
-                if ($durationDown !== $current) {
+                    if ($durationDown !== $current) {
+                        $updates[$service]['duration-down'] = $durationDown;
+                    }
+                } else {
                     $updates[$service]['duration-down'] = $durationDown;
                 }
 
                 if ($cooldownDown === null) {
                     $choices = array_flip(self::$validDurations);
                     $defaultDuration = $defaults['scale_cooldown']['down'];
-                    $current = $currentServiceSettings['scale_cooldown']['down'];
-                    $default = !empty($current) ? $current : $defaultDuration;
+                    $current = isset($currentServiceSettings['scale_cooldown']['down'])
+                        ? $currentServiceSettings['scale_cooldown']['down'] : null;
+                    $default = isset($current) ? $current : $defaultDuration;
                     $defaultChoice = array_search($this->formatDuration($default), $choices);
                     $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $cooldownDown = $this->validateDuration($choices[$choice]);
-                }
-                if ($cooldownDown !== $current) {
+                    if ($cooldownDown !== $current) {
+                        $updates[$service]['cooldown-down'] = $cooldownDown;
+                    }
+                } else {
                     $updates[$service]['cooldown-down'] = $cooldownDown;
                 }
             }
 
             if ($instancesMin === null) {
                 // Ask for instance count limits
-                $current = $currentServiceSettings['instances']['min'];
-                $default = !empty($current) ? $current : 1;
+                $current = isset($currentServiceSettings['instances']['min'])
+                    ? $currentServiceSettings['instances']['min'] : null;
+                $default = isset($current) ? $current : 1;
                 $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', $default, [], function ($value) use ($instanceLimit) {
                     return $this->validateInstanceCount($value, $instanceLimit);
                 });
                 $this->stdErr->writeln('');
-            }
-            if ($instancesMin !== $current) {
+                if ($instancesMin !== $current) {
+                    $updates[$service]['instances-min'] = $instancesMin;
+                }
+            } else {
                 $updates[$service]['instances-min'] = $instancesMin;
             }
 
             if ($instancesMax === null) {
-                $current = $currentServiceSettings['instances']['max'];
-                $default = !empty($current) ? $current : $instanceLimit;
+                $current = isset($currentServiceSettings['instances']['max'])
+                    ? $currentServiceSettings['instances']['max'] : null;
+                $default = isset($current) ? $current : $instanceLimit;
                 $instancesMax = $questionHelper->askInput('Enter the maximum number of instances', $default, [], function ($value) use ($instanceLimit) {
                     return $this->validateInstanceCount($value, $instanceLimit);
                 });
                 $this->stdErr->writeln('');
-            }
-            if ($instancesMax !== $current) {
+                if ($instancesMax !== $current) {
+                    $updates[$service]['instances-max'] = $instancesMax;
+                }
+            } else {
                 $updates[$service]['instances-max'] = $instancesMax;
             }
 
@@ -759,18 +783,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
             throw new InvalidArgumentException($message);
         }
         return $count;
-    }
-
-    /**
-     * Formats a boolean value.
-     *
-     * @param bool $value
-     *
-     * @return string
-     */
-    protected function formatBoolean($value)
-    {
-        return $value ? "true" : "false";
     }
 
     /**
