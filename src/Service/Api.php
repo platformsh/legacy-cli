@@ -83,7 +83,7 @@ class Api
      *
      * @var array
      */
-    private static array $cachedNextDeployment = [];
+    private static $cachedNextDeployment = [];
 
     /**
      * The library's API client object.
