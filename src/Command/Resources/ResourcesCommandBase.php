@@ -81,7 +81,7 @@ class ResourcesCommandBase extends CommandBase
             $byType = [];
             foreach ($services as $name => $service) {
                 $type = $service->type;
-                [$prefix] = explode(':', $service->type, 2);
+                list($prefix) = explode(':', $service->type, 2);
                 $byType[$type][] = $name;
                 $byType[$prefix][] = $name;
             }
