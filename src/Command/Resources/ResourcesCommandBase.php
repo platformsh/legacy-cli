@@ -4,14 +4,10 @@ namespace Platformsh\Cli\Command\Resources;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Util\Wildcard;
-use Platformsh\Client\Exception\EnvironmentStateException;
-use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Deployment\Worker;
-use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 
 class ResourcesCommandBase extends CommandBase
