@@ -185,6 +185,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'splunk',
             'sumologic',
             'syslog',
+            'otlp',
         ];
 
         return [
@@ -418,6 +419,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'sumologic',
                     'splunk',
                     'webhook',
+                    'otlp',
                 ]],
                 'description' => 'The URL or API endpoint for the integration',
             ]),
@@ -594,6 +596,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'splunk',
                     'sumologic',
                     'syslog',
+                    'otlp',
                 ]],
                 'description' => 'Whether HTTPS certificate verification should be enabled (recommended)',
                 'questionLine' => 'Should HTTPS certificate verification be enabled (recommended)',
@@ -603,7 +606,10 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'headers' => new ArrayField('HTTP header', [
                 'optionName' => 'header',
-                'conditions' => ['type' => 'httplog'],
+                'conditions' => ['type' => [
+                    'httplog',
+                    'otlp',
+                ]],
                 'description' => 'HTTP header(s) to use in POST requests. Separate names and values with a colon (:).',
                 'required' => false,
                 // Override the default split pattern (which splits a comma-separated
