@@ -76,7 +76,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $environment = $this->getSelectedEnvironment();
 
         try {
-            $nextDeployment = $this->loadNextDeployment($environment);
+            $nextDeployment = $this->api()->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
                 $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api()->getEnvironmentLabel($environment, 'comment')));
@@ -85,7 +85,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             throw $e;
         }
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->api()->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -135,10 +135,10 @@ class ResourcesSetCommand extends ResourcesCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $containerProfiles = $nextDeployment->container_profiles;
+        $containerProfiles = $this->sortContainerProfiles($nextDeployment->container_profiles);
 
         // Remove guaranteed profiles if project does not support it.
-        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
+        $supportsGuaranteedCPU = $this->api()->supportsGuaranteedCPU($nextDeployment->project_info);
         foreach ($containerProfiles as $profileName => $profile) {
             foreach ($profile as $sizeName => $sizeInfo) {
                 if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') {
@@ -203,13 +203,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
                       || (isset($properties['resources']['minimum']['memory']) && $sizeInfo['memory'] < $properties['resources']['minimum']['memory'])) {
                         continue;
                     }
-                    $description = sprintf('CPU %s, memory %s MB', $sizeInfo['cpu'], $sizeInfo['memory']);
+                    $description = sprintf('CPU %s, memory %s MB (%s)', $sizeInfo['cpu'], $sizeInfo['memory'], $sizeInfo['cpu_type']);
                     if (isset($properties['resources']['profile_size'])
                         && $profileSize == $properties['resources']['profile_size']) {
                         $description .= ' <question>(current)</question>';
                     } elseif ($defaultOption !== null && $defaultOption === $profileSize) {
                         $description .= ' <question>(default)</question>';
                     }
+
                     $options[$profileSize] = $description;
                 }
 
@@ -410,8 +411,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $newProperties = array_replace_recursive($properties, $updates);
             $newSizeInfo = $this->sizeInfo($newProperties, $containerProfiles);
             $this->stdErr->writeln('    CPU: ' . $this->formatChange(
-                $this->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
-                $this->formatCPU($newSizeInfo['cpu'])
+                $this->formatCPU($sizeInfo ? $sizeInfo['cpu']  : null) . ' ' . $this->formatCPUType($sizeInfo),
+                $this->formatCPU($newSizeInfo['cpu']) . ' '. $this->formatCPUType($newSizeInfo)
             ));
             $this->stdErr->writeln('    Memory: ' . $this->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,

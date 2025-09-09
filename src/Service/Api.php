@@ -10,6 +10,7 @@ use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Message\ResponseInterface;
+use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\CredentialHelper\KeyringUnavailableException;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage as CredentialHelperStorage;
@@ -25,6 +26,9 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Platformsh\Client\Model\Deployment\Service;
+use Platformsh\Client\Model\Deployment\WebApp;
+use Platformsh\Client\Model\Deployment\Worker;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Organization\Member;
@@ -73,6 +77,13 @@ class Api
 
     /** @var FileLock */
     private $fileLock;
+
+    /**
+     * Cached next deployment.
+     *
+     * @var array
+     */
+    private static $cachedNextDeployment = [];
 
     /**
      * The library's API client object.
@@ -1810,5 +1821,93 @@ class Api
             throw $e;
         }
         return $settings;
+    }
+
+    /**
+     * Loads the next environment deployment and caches it statically.
+     *
+     * The static cache means it can be reused while running a sub-command.
+     *
+     * @param Environment $environment
+     * @param bool $reset
+     * @return EnvironmentDeployment
+     */
+    public function loadNextDeployment(Environment $environment, $reset = false)
+    {
+        $cacheKey = $environment->project . ':' . $environment->id;
+        if (isset(self::$cachedNextDeployment[$cacheKey]) && !$reset) {
+            return self::$cachedNextDeployment[$cacheKey];
+        }
+        $progress = new ProgressMessage($this->stdErr);
+        try {
+            $progress->show('Loading deployment information...');
+            $next = $environment->getNextDeployment();
+            if (!$next) {
+                throw new EnvironmentStateException('No next deployment found', $environment);
+            }
+        } finally {
+            $progress->done();
+        }
+        return self::$cachedNextDeployment[$cacheKey] = $next;
+    }
+
+    /**
+     * Lists services in a deployment.
+     *
+     * @param EnvironmentDeployment $deployment
+     *
+     * @return array<string, WebApp||Worker|Service>
+     *     An array of services keyed by the service name.
+     */
+    public function allServices(EnvironmentDeployment $deployment)
+    {
+        $webapps = $deployment->webapps;
+        $workers = $deployment->workers;
+        $services = $deployment->services;
+        ksort($webapps, SORT_STRING|SORT_FLAG_CASE);
+        ksort($workers, SORT_STRING|SORT_FLAG_CASE);
+        ksort($services, SORT_STRING|SORT_FLAG_CASE);
+        return array_merge($webapps, $workers, $services);
+    }
+
+    /**
+     * Check if project supports guaranteed resources.
+     *
+     * @param array $projectInfo
+     *
+     * @return bool
+     *  True if guaranteed CPU is supported, false otherwise.
+     */
+    public function supportsGuaranteedCPU(array $projectInfo)
+    {
+        return !empty($projectInfo["settings"]["enable_guaranteed_resources"]) &&
+            !empty($projectInfo["capabilities"]["guaranteed_resources"]["enabled"]);
+    }
+
+    /**
+     * Check if environment has guaranteed CPU.
+     *
+     * @param \Platformsh\Client\Model\Environment $environment
+     *
+     * @return bool
+     */
+    public function environmentHasGuaranteedCPU(Environment $environment)
+    {
+        $deployment = $this->getCurrentDeployment($environment);
+        if ($this->supportsGuaranteedCPU($deployment->project_info)) {
+            $containerProfiles = $deployment->container_profiles;
+            $services = $this->allServices($deployment);
+            foreach ($services as $service) {
+                $properties = $service->getProperties();
+                if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {
+                    $profileInfo = $containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']];
+                    if (isset($profileInfo['cpu_type']) && $profileInfo['cpu_type'] == 'guaranteed') {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

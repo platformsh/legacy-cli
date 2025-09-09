@@ -4,42 +4,17 @@ namespace Platformsh\Cli\Command\Resources;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Util\Wildcard;
-use Platformsh\Client\Exception\EnvironmentStateException;
-use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Deployment\Worker;
-use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
 
 class ResourcesCommandBase extends CommandBase
 {
-    private static $cachedNextDeployment = [];
-
     public function isHidden()
     {
         return !$this->config()->get('api.sizing') || parent::isHidden();
-    }
-
-    /**
-     * Lists services in a deployment.
-     *
-     * @param EnvironmentDeployment $deployment
-     *
-     * @return array<string, WebApp||Worker|Service>
-     *     An array of services keyed by the service name.
-     */
-    protected function allServices(EnvironmentDeployment $deployment)
-    {
-        $webapps = $deployment->webapps;
-        $workers = $deployment->workers;
-        $services = $deployment->services;
-        ksort($webapps, SORT_STRING|SORT_FLAG_CASE);
-        ksort($workers, SORT_STRING|SORT_FLAG_CASE);
-        ksort($services, SORT_STRING|SORT_FLAG_CASE);
-        return array_merge($webapps, $workers, $services);
     }
 
     /**
@@ -55,34 +30,6 @@ class ResourcesCommandBase extends CommandBase
             return false;
         }
         return isset($service->getProperties()['resources']['minimum']['disk']);
-    }
-
-    /**
-     * Loads the next environment deployment and caches it statically.
-     *
-     * The static cache means it can be reused while running a sub-command.
-     *
-     * @param Environment $environment
-     * @param bool $reset
-     * @return EnvironmentDeployment
-     */
-    protected function loadNextDeployment(Environment $environment, $reset = false)
-    {
-        $cacheKey = $environment->project . ':' . $environment->id;
-        if (isset(self::$cachedNextDeployment[$cacheKey]) && !$reset) {
-            return self::$cachedNextDeployment[$cacheKey];
-        }
-        $progress = new ProgressMessage($this->stdErr);
-        try {
-            $progress->show('Loading deployment information...');
-            $next = $environment->getNextDeployment();
-            if (!$next) {
-                throw new EnvironmentStateException('No next deployment found', $environment);
-            }
-        } finally {
-            $progress->done();
-        }
-        return self::$cachedNextDeployment[$cacheKey] = $next;
     }
 
     /**
@@ -207,16 +154,37 @@ class ResourcesCommandBase extends CommandBase
     }
 
     /**
-     * Check if project supports guaranteed resources.
+     * Format CPU Type.
      *
-     * @param array $projectInfo
+     * @param array|null $sizeInfo
      *
-     * @return bool
-     *  True if guaranteed CPU is supported, false otherwise.
+     * @return string
      */
-    protected function supportsGuaranteedCPU(array $projectInfo)
+    protected function formatCPUType($sizeInfo)
     {
-        return !empty($projectInfo["settings"]["enable_guaranteed_resources"]) &&
-            !empty($projectInfo["capabilities"]["guaranteed_resources"]["enabled"]);
+        $size = $sizeInfo ? $sizeInfo['cpu']  : null;
+        if ($size === null) {
+            return "";
+        }
+
+        return sprintf('(%s)', $sizeInfo['cpu_type']);
+    }
+
+    /**
+     * Sort container profiles by size.
+     *
+     * @param array $profiles
+     *
+     * @return array
+     */
+    protected function sortContainerProfiles(array $profiles)
+    {
+        foreach ($profiles as &$profile) {
+            uasort($profile, function($a, $b) {
+                return $a['cpu'] == $b['cpu'] ? 0 : ($a['cpu'] > $b['cpu'] ? 1 : -1);
+            });
+        }
+
+        return $profiles;
     }
 }
