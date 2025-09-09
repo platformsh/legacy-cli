@@ -6,7 +6,7 @@
  *
  * @deprecated
  *   The CLI no longer requires a local PHP installation or this installer.
- *   See https://docs.platform.sh/administration/cli.html
+ *   See https://docs.upsun.com/anchors/fixed/cli/
  *
  * This script will check requirements, download the CLI, move it into place,
  * and run the self:install command (to set up the PATH and autocompletion).
@@ -80,7 +80,7 @@ class Installer {
   'userAgent' => 'platformsh-cli',
   'serviceEnvPrefix' => 'PLATFORM_',
   'migratePrompt' => true,
-  'migrateDocsUrl' => 'https://docs.platform.sh/administration/cli.html',
+  'migrateDocsUrl' => 'https://docs.upsun.com/anchors/fixed/cli/',
 )/* END_CONFIG */;
 
         $required = ['envPrefix', 'manifestUrl', 'configDir', 'executable', 'cliName'];
