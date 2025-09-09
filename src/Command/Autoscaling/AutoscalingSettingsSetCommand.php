@@ -143,6 +143,14 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $instancesMax = $this->validateInstanceCount($instancesMax, $instanceLimit, 'instances-max');
         }
 
+        // Show current autoscaling settings
+        if (($exitCode = $this->runOtherCommand('autoscaling:get', [
+            '--project' => $environment->project,
+            '--environment' => $environment->id,
+            ], $this->stdErr)) !== 0) {
+            return $exitCode;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
