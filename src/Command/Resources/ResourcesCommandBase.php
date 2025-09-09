@@ -181,7 +181,7 @@ class ResourcesCommandBase extends CommandBase
      *
      * @return array
      */
-    protected function sortContainerProfiles(array $profiles): array
+    protected function sortContainerProfiles(array $profiles)
     {
         foreach ($profiles as &$profile) {
             uasort($profile, function($a, $b) {
