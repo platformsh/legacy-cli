@@ -650,6 +650,10 @@ class Api
         if (in_array($project->vendor, (array) $filters)) {
             return true;
         }
+        // Show projects with the "upsun" vendor under the "platformsh" filter, from September 23rd 2025.
+        if ($project->vendor === 'upsun' && in_array('platformsh', (array) $filters)) {
+            return time() > 1758596400; // 2025-09-23T03:00:00Z // 5am CEST
+        }
         return false;
     }
 
