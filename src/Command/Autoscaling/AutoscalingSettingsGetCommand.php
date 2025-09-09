@@ -122,7 +122,7 @@ class AutoscalingSettingsGetCommand extends CommandBase
         } else {
             $this->stdErr->writeln(sprintf('No autoscaling configuration found for the project %s, environment %s.', $this->api()->getProjectLabel($this->getSelectedProject()), $this->api()->getEnvironmentLabel($environment)));
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('You can also configure autoscaling by running <info>%s autoscaling:set</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('You can configure autoscaling by running: <info>%s autoscaling:set</info>', $this->config()->get('application.executable')));
         }
 
         return 0;
