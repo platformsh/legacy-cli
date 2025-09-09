@@ -211,7 +211,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     });
                     $this->stdErr->writeln('');
                 }
-                $updates[$service]['threshold-up'] = $thresholdUp;
+                if ($thresholdUp !== $current) {
+                    $updates[$service]['threshold-up'] = $thresholdUp;
+                }
 
                 if ($durationUp === null) {
                     // Ask for scaling up duration
@@ -224,7 +226,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $durationUp = $this->validateDuration($choices[$choice]);
                 }
-                $updates[$service]['duration-up'] = $durationUp;
+                if ($durationUp !== $current) {
+                    $updates[$service]['duration-up'] = $durationUp;
+                }
 
                 if ($cooldownUp === null) {
                     // Ask for cool down period durations
@@ -237,7 +241,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $cooldownUp = $this->validateDuration($choices[$choice]);
                 }
-                $updates[$service]['cooldown-up'] = $cooldownUp;
+                if ($cooldownUp !== $current) {
+                    $updates[$service]['cooldown-up'] = $cooldownUp;
+                }
             }
 
 
@@ -255,7 +261,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     });
                     $this->stdErr->writeln('');
                 }
-                $updates[$service]['threshold-down'] = $thresholdDown;
+                if ($thresholdDown !== $current) {
+                    $updates[$service]['threshold-down'] = $thresholdDown;
+                }
 
                 if ($durationDown === null) {
                     // Ask for scaling down duration
@@ -268,7 +276,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $durationDown = $this->validateDuration($choices[$choice]);
                 }
-                $updates[$service]['duration-down'] = $durationDown;
+                if ($durationDown !== $current) {
+                    $updates[$service]['duration-down'] = $durationDown;
+                }
 
                 if ($cooldownDown === null) {
                     $choices = array_flip(self::$validDurations);
@@ -280,7 +290,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $choice = $questionHelper->choose($choices, $text, $defaultChoice);
                     $cooldownDown = $this->validateDuration($choices[$choice]);
                 }
-                $updates[$service]['cooldown-down'] = $cooldownDown;
+                if ($cooldownDown !== $current) {
+                    $updates[$service]['cooldown-down'] = $cooldownDown;
+                }
             }
 
             if ($instancesMin === null) {
@@ -292,7 +304,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 });
                 $this->stdErr->writeln('');
             }
-            $updates[$service]['instances-min'] = $instancesMin;
+            if ($instancesMin !== $current) {
+                $updates[$service]['instances-min'] = $instancesMin;
+            }
 
             if ($instancesMax === null) {
                 $current = $currentServiceSettings['instances']['max'];
@@ -302,7 +316,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 });
                 $this->stdErr->writeln('');
             }
-            $updates[$service]['instances-max'] = $instancesMax;
+            if ($instancesMax !== $current) {
+                $updates[$service]['instances-max'] = $instancesMax;
+            }
 
             if ($enabled !== null) {
                 $updates[$service]['enabled'] = $enabled;
