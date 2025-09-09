@@ -185,7 +185,7 @@ class ResourcesCommandBase extends CommandBase
     {
         foreach ($profiles as &$profile) {
             uasort($profile, function($a, $b) {
-                return $a['cpu'] <=> (float)$b['cpu'];
+                return $a['cpu'] == $b['cpu'] ? 0 : ($a['cpu'] > $b['cpu'] ? 1 : -1);
             });
         }
 
