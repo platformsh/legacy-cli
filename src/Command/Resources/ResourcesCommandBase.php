@@ -164,7 +164,7 @@ class ResourcesCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function formatCPUType(?array $sizeInfo): string
+    protected function formatCPUType($sizeInfo)
     {
         $size = $sizeInfo ? $sizeInfo['cpu']  : null;
         if ($size === null) {
