@@ -118,7 +118,7 @@ class EnvironmentActivateCommand extends CommandBase
             if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_branch_msg')) {
                 $this->stdErr->writeln('');
                 $question = trim($this->config()->get('warnings.guaranteed_resources_branch_msg'))
-                    . "\n\n" . "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";
+                    . "\n\n" . $question;
             }
 
             if (!$questionHelper->confirm($question)) {
