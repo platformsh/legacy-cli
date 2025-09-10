@@ -229,9 +229,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
                         ? $currentServiceSettings['triggers'][$metric]['up']['duration'] : null;
                     $default = isset($current) ? $current : $defaultDuration;
                     $defaultChoice = array_search($this->formatDuration($default), $choices);
-                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
-                    $durationUp = $this->validateDuration($choices[$choice]);
+                    $text = 'Enter the duration of the evaluation period';
+                    $durationUp = $questionHelper->askInput($text, $this->formatDuration($default), $choices, function ($v) {
+                        return $this->validateDuration($v);
+                    });
                     if ($durationUp !== $current) {
                         $updates[$service]['duration-up'] = $durationUp;
                     }
@@ -246,10 +247,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $current = isset($currentServiceSettings['scale_cooldown']['up'])
                         ? $currentServiceSettings['scale_cooldown']['up'] : null;
                     $default = isset($current) ? $current : $defaultDuration;
-                    $defaultChoice = array_search($this->formatDuration($default), $choices);
-                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
-                    $cooldownUp = $this->validateDuration($choices[$choice]);
+                    $text = 'Enter the duration of the cool-down period';
+                    $cooldownUp = $questionHelper->askInput($text, $this->formatDuration($default), $choices, function ($v) {
+                        return $this->validateDuration($v);
+                    });
                     if ($cooldownUp !== $current) {
                         $updates[$service]['cooldown-up'] = $cooldownUp;
                     }
@@ -287,10 +288,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $current = isset($currentServiceSettings['triggers'][$metric]['down']['duration'])
                         ? $currentServiceSettings['triggers'][$metric]['down']['duration'] : null;
                     $default = isset($current) ? $current : $defaultDuration;
-                    $defaultChoice = array_search($this->formatDuration($default), $choices);
-                    $text = 'Enter the duration of the evaluation period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
-                    $durationDown = $this->validateDuration($choices[$choice]);
+                    $text = 'Enter the duration of the evaluation period';
+                    $durationDown = $questionHelper->askInput($text, $this->formatDuration($default), $choices, function ($v) {
+                        return $this->validateDuration($v);
+                    });
                     if ($durationDown !== $current) {
                         $updates[$service]['duration-down'] = $durationDown;
                     }
@@ -304,10 +305,10 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $current = isset($currentServiceSettings['scale_cooldown']['down'])
                         ? $currentServiceSettings['scale_cooldown']['down'] : null;
                     $default = isset($current) ? $current : $defaultDuration;
-                    $defaultChoice = array_search($this->formatDuration($default), $choices);
-                    $text = 'Enter the duration of the cool-down period' . "\n" . 'Default: <question>' . $this->formatDuration($default) . '</question>';
-                    $choice = $questionHelper->choose($choices, $text, $defaultChoice);
-                    $cooldownDown = $this->validateDuration($choices[$choice]);
+                    $text = 'Enter the duration of the cool-down period';
+                    $cooldownDown = $questionHelper->askInput($text, $this->formatDuration($default), $choices, function ($v) {
+                        return $this->validateDuration($v);
+                    });
                     if ($cooldownDown !== $current) {
                         $updates[$service]['cooldown-down'] = $cooldownDown;
                     }
