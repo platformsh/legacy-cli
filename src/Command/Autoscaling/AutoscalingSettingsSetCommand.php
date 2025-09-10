@@ -154,6 +154,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
             return $exitCode;
         }
 
+        $this->stdErr->writeln('');
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
@@ -187,7 +189,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
             // Get autoscaling current values for selected service
             $currentServiceSettings = $autoscalingSettings['services'][$service];
 
-            $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold>' . ucfirst($this->typeName($services[$service])) . ': </><options=bold,underscore>' . $service . '</>');
             $this->stdErr->writeln('');
 
@@ -307,7 +308,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      * @param string $direction Either 'up' or 'down'
      * @param string $service Service name
      * @param string $metric Metric name
-     * @param array $currentServiceSettings Current settings for the service
+     * @param array|null $currentServiceSettings Current settings for the service
      * @param array $defaults Default autoscaling settings
      * @param float|null $threshold Threshold value (passed by reference)
      * @param int|null $duration Duration value (passed by reference)
@@ -316,7 +317,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return void
      */
-    private function handleScalingSettings($questionHelper, $direction, $service, $metric, array $currentServiceSettings, array $defaults, &$threshold, &$duration, &$cooldown, array &$updates)
+    private function handleScalingSettings($questionHelper, $direction, $service, $metric, $currentServiceSettings, array $defaults, &$threshold, &$duration, &$cooldown, array &$updates)
     {
         if ($threshold === null || $duration === null || $cooldown === null) {
             $text = '<options=underscore>Settings for scaling <options=bold,underscore>' . $direction . '</></>';
@@ -349,7 +350,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @param \Platformsh\Cli\Service\QuestionHelper $questionHelper
      * @param string $service Service name
-     * @param array $currentServiceSettings Current settings for the service
+     * @param array|null $currentServiceSettings Current settings for the service
      * @param int $instanceLimit Maximum allowed instances
      * @param int|null $instancesMin Minimum instances (passed by reference)
      * @param int|null $instancesMax Maximum instances (passed by reference)
@@ -357,7 +358,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return void
      */
-    private function handleInstanceSettings($questionHelper, $service, array $currentServiceSettings, $instanceLimit, &$instancesMin, &$instancesMax, array &$updates)
+    private function handleInstanceSettings($questionHelper, $service, $currentServiceSettings, $instanceLimit, &$instancesMin, &$instancesMax, array &$updates)
     {
         $instancesMin = $this->askForSetting($questionHelper, $instancesMin, 'Enter the minimum number of instances',
             isset($currentServiceSettings['instances']['min']) ? $currentServiceSettings['instances']['min'] : null,

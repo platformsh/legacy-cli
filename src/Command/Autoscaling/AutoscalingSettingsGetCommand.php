@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Autoscaling;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -121,8 +122,11 @@ class AutoscalingSettingsGetCommand extends CommandBase
             $table->render($rows, $this->tableHeader, $this->defaultColumns);
         } else {
             $this->stdErr->writeln(sprintf('No autoscaling configuration found for the project %s, environment %s.', $this->api()->getProjectLabel($this->getSelectedProject()), $this->api()->getEnvironmentLabel($environment)));
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('You can configure autoscaling by running: <info>%s autoscaling:set</info>', $this->config()->get('application.executable')));
+            $isOriginalCommand = $input instanceof ArgvInput;
+            if ($isOriginalCommand) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('You can configure autoscaling by running: <info>%s autoscaling:set</info>', $this->config()->get('application.executable')));
+            }
         }
 
         return 0;
