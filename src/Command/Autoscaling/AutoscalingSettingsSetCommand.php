@@ -70,10 +70,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
             throw $e;
         }
 
+        if (!$this->api()->getAutoscalingSettingsLink($environment, true)) {
+            throw new EnvironmentStateException('Managing autoscaling settings is not currently available', $environment);
+        }
+
         $autoscalingSettings = $this->api()->getAutoscalingSettings($environment);
         if (!$autoscalingSettings) {
-            $this->stdErr->writeln(\sprintf('Autoscaling support is not currently available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
-            return 1;
+            throw new EnvironmentStateException('Managing autoscaling settings is not currently available', $environment);
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 

@@ -1773,22 +1773,22 @@ class Api
      */
     public function getAutoscalingSettingsLink(Environment $environment, $manage = false)
     {
-        $link = "#autoscaling";
+        $rel = "#autoscaling";
         if ($manage === true) {
-            $link = "#manage-autoscaling";
+            $rel = "#manage-autoscaling";
         }
 
-        $environmentData = $environment->getData();
-        if (!isset($environmentData['_links'][$link])) {
+        if (!$environment->hasLink($rel)) {
+            $this->debug(\sprintf(
+                'The environment <comment>%s</comment> is missing the link <comment>%s</comment>',
+                $environment->id,
+                $rel
+            ));
+
             return false;
         }
-        if (!isset($environmentData['_links'][$link]['href'])) {
-            $this->stdErr->writeln(\sprintf('Unable to find autoscaling URLs for the environment: %s', $this->getEnvironmentLabel($environment, 'error')));
 
-            return false;
-        }
-
-        return $environmentData['_links'][$link]['href'];
+        return $environment->getLink($rel);
     }
 
     /**
@@ -1826,7 +1826,7 @@ class Api
     public function setAutoscalingSettings(Environment $environment, array $settings)
     {
         if (!$this->getAutoscalingSettingsLink($environment, true)) {
-            throw new EnvironmentStateException('Managing autoscaling settings is not allowed on the environment', $environment);
+            throw new EnvironmentStateException('Managing autoscaling settings is not currently available', $environment);
         }
 
         try {
