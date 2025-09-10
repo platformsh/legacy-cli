@@ -228,7 +228,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
                     $current = isset($currentServiceSettings['triggers'][$metric]['up']['duration'])
                         ? $currentServiceSettings['triggers'][$metric]['up']['duration'] : null;
                     $default = isset($current) ? $current : $defaultDuration;
-                    $defaultChoice = array_search($this->formatDuration($default), $choices);
                     $text = 'Enter the duration of the evaluation period';
                     $durationUp = $questionHelper->askInput($text, $this->formatDuration($default), $choices, function ($v) {
                         return $this->validateDuration($v);
