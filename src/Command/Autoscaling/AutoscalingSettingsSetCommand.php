@@ -853,6 +853,14 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $newValue,
             '',
             function ($previousValue, $newValue) {
+                if (!isset(self::$validDurations[$previousValue]) || !isset(self::$validDurations[$newValue])) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Invalid duration key(s): previousValue=<error>%s</error>, newValue=<error>%s</error>. Valid keys are: %s',
+                        $previousValue,
+                        $newValue,
+                        implode(', ', array_keys(self::$validDurations))
+                    ));
+                }
                 return self::$validDurations[$previousValue] < self::$validDurations[$newValue];
             }
         );
