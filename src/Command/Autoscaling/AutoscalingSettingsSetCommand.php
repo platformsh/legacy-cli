@@ -579,10 +579,12 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (isset($updates['threshold-down']) || isset($updates['duration-down']) || isset($updates['cooldown-down'])) {
             $this->stdErr->writeln('    Scaling <options=bold>down</>');
 
-            $this->stdErr->writeln('      Threshold: ' . $this->formatChange(
-                isset($current['triggers'][$metric]['down']) ? $current['triggers'][$metric]['down']['threshold'] : null,
-                $updates['threshold-down']
-            ));
+            if (isset($updates['threshold-down'])) {
+                $this->stdErr->writeln('      Threshold: ' . $this->formatChange(
+                    isset($current['triggers'][$metric]['down']) ? $current['triggers'][$metric]['down']['threshold'] : null,
+                    $updates['threshold-down']
+                ));
+            }
             if (isset($updates['duration-down'])) {
                 $this->stdErr->writeln('      Duration: ' . $this->formatDurationChange(
                     isset($current['triggers'][$metric]['down']) ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
