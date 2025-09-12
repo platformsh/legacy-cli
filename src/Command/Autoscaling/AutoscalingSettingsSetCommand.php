@@ -199,7 +199,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $choices = $supportedMetrics;
                 $default = $choices[0];
                 $text = 'Which metric should be used for autoscaling?' . "\n" . 'Default: <question>' . $default . '</question>';
-                $choice = $questionHelper->choose($choices, $text, 0);
+                $choice = $questionHelper->choose($choices, $text, 0, false);
                 $metric = $choices[$choice];
             }
 
@@ -326,7 +326,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $this->stdErr->writeln($text);
             $this->stdErr->writeln('');
 
-            $threshold = $this->askForSetting($questionHelper, $threshold, 'Enter the threshold',
+            $threshold = $this->askForSetting($questionHelper, $threshold, 'Enter the threshold (%)',
                 isset($currentServiceSettings['triggers'][$metric][$direction]['threshold']) ? $currentServiceSettings['triggers'][$metric][$direction]['threshold'] : null,
                 $defaults['triggers'][$metric][$direction]['threshold'],
                 function($value) { return $this->validateThreshold($value); },
@@ -561,7 +561,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
             if (isset($updates['threshold-up'])) {
                 $this->stdErr->writeln('      Threshold: ' . $this->formatChange(
                     isset($current['triggers'][$metric]['up']) ? $current['triggers'][$metric]['up']['threshold'] : null,
-                    $updates['threshold-up']
+                    $updates['threshold-up'],
+                    '%'
                 ));
             }
             if (isset($updates['duration-up'])) {
@@ -584,7 +585,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
             if (isset($updates['threshold-down'])) {
                 $this->stdErr->writeln('      Threshold: ' . $this->formatChange(
                     isset($current['triggers'][$metric]['down']) ? $current['triggers'][$metric]['down']['threshold'] : null,
-                    $updates['threshold-down']
+                    $updates['threshold-down'],
+                    '%'
                 ));
             }
             if (isset($updates['duration-down'])) {
