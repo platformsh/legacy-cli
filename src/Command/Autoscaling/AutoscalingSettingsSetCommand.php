@@ -95,10 +95,12 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $service = $this->validateService($service, $services);
         }
 
+        $supportedMetrics = $this->getSupportedMetrics($defaults);
+
         // Validate the --metric option.
         $metric = $input->getOption('metric');
         if ($metric !== null) {
-            $metric = $this->validateMetric($metric, $defaults['triggers']);
+            $metric = $this->validateMetric($metric, $supportedMetrics);
         }
 
         // Validate the --enabled option.
@@ -194,7 +196,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
             if ($metric === null) {
                 // Ask for metric name
-                $choices = array_keys($defaults['triggers']);
+                $choices = $supportedMetrics;
                 $default = $choices[0];
                 $text = 'Which metric should be used for autoscaling?' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, 0);
@@ -265,7 +267,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             }
 
             if (!empty($updates[$service])) {
-                $metric = $this->validateMetric($metric, $defaults['triggers']);
+                $metric = $this->validateMetric($metric, $supportedMetrics);
                 // since we have some changes, inject the metric name for them
                 $updates[$service]['metric'] = $metric;
             }
@@ -637,9 +639,25 @@ class AutoscalingSettingsSetCommand extends CommandBase
     }
 
     /**
+     * Return the names of supported metrics.
+     *
+     * @param array $defaults Autoscaling settings defaults
+     *
+     * @return array Supported metric names
+     */
+    protected function getSupportedMetrics(array $defaults)
+    {
+        // TODO: change this once we properly support multiple metrics other than 'cpu'
+        // override supported metrics to only support cpu despite what the backend allows
+        return ['cpu'];
+        //return array_keys($defaults['triggers']);
+    }
+
+    /**
      * Validates a metric name.
      *
-     * @param string $value
+     * @param string $value   Name of metric to validate
+     * @param array  $metrics List of valid metric names
      *
      * @throws InvalidArgumentException
      *
@@ -650,8 +668,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (array_key_exists($value, $metrics)) {
             return $value;
         }
-        $metricNames = array_keys($metrics);
-        throw new InvalidArgumentException(sprintf('Invalid metric name <error>%s</error>. Available metrics: %s', $value, implode(', ', $metricNames)));
+        throw new InvalidArgumentException(sprintf('Invalid metric name <error>%s</error>. Available metrics: %s', $value, implode(', ', $metrics)));
     }
 
     /**
