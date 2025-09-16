@@ -198,7 +198,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 // Ask for metric name
                 $choices = $supportedMetrics;
                 $default = $choices[0];
-                $text = 'Which metric should be used for autoscaling?' . "\n" . 'Default: <question>' . $default . '</question>';
+                $text = 'Which metric should be configured as a trigger for autoscaling?' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, 0, false);
                 $metric = $choices[$choice];
             }
@@ -649,9 +649,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
      */
     protected function getSupportedMetrics(array $defaults)
     {
-        // TODO: change this once we properly support multiple metrics other than 'cpu'
-        // override supported metrics to only support cpu despite what the backend allows
-        return ['cpu'];
+        // TODO: change this once we properly support multiple metrics other than 'cpu' or 'memory'
+        // override supported metrics to only support cpu/memory despite what the backend allows
+        return ['cpu', 'memory'];
         //return array_keys($defaults['triggers']);
     }
 
@@ -667,7 +667,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      */
     protected function validateMetric($value, $metrics)
     {
-        if (array_key_exists($value, $metrics)) {
+        if (in_array($value, $metrics, true)) {
             return $value;
         }
         throw new InvalidArgumentException(sprintf('Invalid metric name <error>%s</error>. Available metrics: %s', $value, implode(', ', $metrics)));
