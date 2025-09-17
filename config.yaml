@@ -49,6 +49,7 @@ api:
   oauth2_client_id: 'platform-cli'
 
   organizations: true
+  organization_types: true
   user_verification: true
   metrics: true
   teams: true

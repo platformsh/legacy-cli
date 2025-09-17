@@ -248,6 +248,9 @@ api:
   # Whether the Organizations API is enabled.
   organizations: false
 
+  # Whether Organization Types are supported.
+  organization_types: false
+
   # Whether Centralized User Management is available.
   # Ignored if "organizations" is disabled.
   centralized_permissions: true
