@@ -248,8 +248,11 @@ api:
   # Whether the Organizations API is enabled.
   organizations: false
 
-  # Whether Organization Types are supported.
-  organization_types: false
+  # A list of supported organization types.
+  organization_types: []
+
+  # The default type when creating an organization.
+  default_organization_type: ~
 
   # Whether Centralized User Management is available.
   # Ignored if "organizations" is disabled.

@@ -48,8 +48,10 @@ api:
   auth_url: 'https://auth.api.platform.sh'
   oauth2_client_id: 'platform-cli'
 
+  organization_types: [flexible, fixed]
+  default_organization_type: flexible
+
   organizations: true
-  organization_types: true
   user_verification: true
   metrics: true
   teams: true
