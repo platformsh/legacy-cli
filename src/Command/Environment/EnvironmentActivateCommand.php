@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -113,7 +114,12 @@ class EnvironmentActivateCommand extends CommandBase
                 continue;
             }
 
-            $hasGuaranteedCPU = $this->api()->environmentHasGuaranteedCPU($environment);
+            try {
+                $hasGuaranteedCPU = $this->api()->environmentHasGuaranteedCPU($environment);
+            } catch (EnvironmentStateException $e) {
+                $hasGuaranteedCPU = false;
+            }
+
             $question = "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";
             if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_branch_msg')) {
                 $this->stdErr->writeln('');
