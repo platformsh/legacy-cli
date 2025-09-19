@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Organization;
 
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Organization\Organization;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,6 +13,7 @@ class OrganizationListCommand extends OrganizationCommandBase
         'id' => 'ID',
         'name' => 'Name',
         'label' => 'Label',
+        'type' => 'Type',
         'created_at' => 'Created at',
         'updated_at' => 'Updated at',
         'owner_id' => 'Owner ID',
@@ -31,6 +33,12 @@ class OrganizationListCommand extends OrganizationCommandBase
             ->addOption('my', null, InputOption::VALUE_NONE, 'List only the organizations you own')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'An organization property to sort by')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order');
+
+        if ($this->config()->get('api.organization_types')) {
+            $this->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter organizations by type');
+            $this->defaultColumns = ['name', 'label', 'type', 'owner_email'];
+        }
+
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
@@ -48,6 +56,11 @@ class OrganizationListCommand extends OrganizationCommandBase
             $organizations = $client->listOrganizationsWithMember($userId);
         }
 
+        if ($input->hasOption('type') && ($type = $input->getOption('type'))) {
+            $organizations = array_filter($organizations, function (Organization $org) use ($type) {
+                return $org->getProperty('type', false) === $type;
+            });
+        }
         if ($sortBy = $input->getOption('sort')) {
             $this->api()->sortResources($organizations, $sortBy);
         }

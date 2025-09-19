@@ -21,13 +21,14 @@ func TestOrgInfo(t *testing.T) {
 	defer apiServer.Close()
 
 	apiHandler.SetOrgs([]*mockapi.Org{
-		makeOrg("org-id-1", "org-1", "Org 1", myUserID),
+		makeOrg("org-id-1", "org-1", "Org 1", myUserID, "flexible"),
 	})
 
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
 	assert.Contains(t, f.Run("org:info", "-o", "org-1", "--format", "csv", "--refresh"), `Property,Value
 id,org-id-1
+type,flexible
 name,org-1
 label,Org 1
 owner_id,user-for-org-info-test

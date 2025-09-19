@@ -22,8 +22,8 @@ func TestProjectList(t *testing.T) {
 	defer apiServer.Close()
 
 	apiHandler.SetOrgs([]*mockapi.Org{
-		makeOrg("org-id-1", "org-1", "Org 1", myUserID),
-		makeOrg("org-id-2", "org-2", "Org 2", otherUserID),
+		makeOrg("org-id-1", "org-1", "Org 1", myUserID, "flexible"),
+		makeOrg("org-id-2", "org-2", "Org 2", otherUserID, "fixed"),
 	})
 	apiHandler.SetProjects([]*mockapi.Project{
 		makeProject("project-id-1", "org-id-1", vendor, "Project 1", "region-1"),
@@ -72,33 +72,38 @@ func TestProjectList(t *testing.T) {
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
 	assertTrimmed(t, `
-+--------------+-----------+----------+--------------+
-| ID           | Title     | Region   | Organization |
-+--------------+-----------+----------+--------------+
-| project-id-1 | Project 1 | region-1 | org-1        |
-| project-id-2 | Project 2 | region-2 | org-2        |
-| project-id-3 | Project 3 | region-2 | org-2        |
-+--------------+-----------+----------+--------------+
++--------------+-----------+----------+----------+----------+
+| ID           | Title     | Region   | Org name | Org type |
++--------------+-----------+----------+----------+----------+
+| project-id-1 | Project 1 | region-1 | org-1    | flexible |
+| project-id-2 | Project 2 | region-2 | org-2    | fixed    |
+| project-id-3 | Project 3 | region-2 | org-2    | fixed    |
++--------------+-----------+----------+----------+----------+
 `, f.Run("pro", "-v"))
 
 	assertTrimmed(t, `
-ID	Title	Region	Organization
-project-id-1	Project 1	region-1	org-1
-project-id-2	Project 2	region-2	org-2
-project-id-3	Project 3	region-2	org-2
+ID	Title	Region	Org name	Org type
+project-id-1	Project 1	region-1	org-1	flexible
+project-id-2	Project 2	region-2	org-2	fixed
+project-id-3	Project 3	region-2	org-2	fixed
 `, f.Run("pro", "-v", "--format", "plain"))
 
 	assertTrimmed(t, `
-ID,Organization ID
+ID,Org ID
 project-id-1,org-id-1
 project-id-2,org-id-2
 project-id-3,org-id-2
 `, f.Run("pro", "-v", "--format", "csv", "--columns", "id,organization_id"))
 
 	assertTrimmed(t, `
-ID	Title	Region	Organization
-project-id-1	Project 1	region-1	org-1
+ID	Title	Region	Org name	Org type
+project-id-1	Project 1	region-1	org-1	flexible
 `, f.Run("pro", "-v", "--format", "plain", "--my"))
+
+	assertTrimmed(t, `
+ID	Title	Region	Org name	Org type
+project-id-1	Project 1	region-1	org-1	flexible
+`, f.Run("pro", "-v", "--format", "plain", "--org-type", "flexible"))
 
 	assertTrimmed(t, `
 project-id-1

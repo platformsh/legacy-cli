@@ -20,9 +20,10 @@ class ProjectListCommand extends CommandBase
         'id' => 'ID',
         'title' => 'Title',
         'region' => 'Region',
-        'organization_name' => 'Organization',
-        'organization_id' => 'Organization ID',
-        'organization_label' => 'Organization label',
+        'organization_name' => 'Org name',
+        'organization_id' => 'Org ID',
+        'organization_label' => 'Org label',
+        'organization_type' => 'Org type',
         'status' => 'Status',
         'created_at' => 'Created',
     ];
@@ -34,6 +35,9 @@ class ProjectListCommand extends CommandBase
         $this->defaultColumns = ['id', 'title', 'region'];
         if ($organizationsEnabled) {
             $this->defaultColumns[] = 'organization_name';
+            if ($this->config()->get('api.organization_types')) {
+                $this->defaultColumns[] = 'organization_type';
+            }
         }
         $this
             ->setName('project:list')
@@ -52,6 +56,9 @@ class ProjectListCommand extends CommandBase
 
         if ($organizationsEnabled) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name or ID');
+            if ($this->config()->get('api.organization_types')) {
+                $this->addOption('org-type', null, InputOption::VALUE_REQUIRED, 'Filter by organization type');
+            }
         }
 
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
@@ -83,6 +90,9 @@ class ProjectListCommand extends CommandBase
         }
         if ($input->hasOption('org') && $input->getOption('org') !== null) {
             $filters['org'] = $input->getOption('org');
+        }
+        if ($input->hasOption('org-type') && $input->getOption('org-type') !== null) {
+            $filters['org-type'] = $input->getOption('org-type');
         }
         $this->filterProjects($projects, $filters);
 
@@ -172,6 +182,7 @@ class ProjectListCommand extends CommandBase
                 'organization_id' => $orgInfo ? $orgInfo->id : '',
                 'organization_name' => $orgInfo ? $orgInfo->name : '',
                 'organization_label' => $orgInfo ? $orgInfo->label : '',
+                'organization_type' => $orgInfo ? (string) $orgInfo->getProperty('type', false) : '',
                 'status' => $projectInfo->status,
                 'created_at' => $formatter->format($projectInfo->created_at, 'created_at'),
                 '[deprecated]' => '',
@@ -257,6 +268,15 @@ class ProjectListCommand extends CommandBase
                             return $isID ? $info->organization_ref->id === $value : $info->organization_ref->name === $value;
                         }
                         return false;
+                    });
+                    break;
+
+                case 'org-type':
+                    $projects = \array_filter($projects, function (BasicProjectInfo $info) use ($value) {
+                        if (empty($info->organization_ref)) {
+                            return false;
+                        }
+                        return $info->organization_ref->getProperty('type', false) === $value;
                     });
                     break;
             }

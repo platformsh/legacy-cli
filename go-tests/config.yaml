@@ -20,6 +20,9 @@ api:
 
   disable_credential_helpers: true
 
+  organization_types: [flexible, fixed]
+  default_organization_type: flexible
+
   organizations: true
   centralized_permissions: true
   teams: true

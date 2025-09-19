@@ -26,7 +26,7 @@ func TestProjectInfo(t *testing.T) {
 	defer apiServer.Close()
 
 	apiHandler.SetOrgs([]*mockapi.Org{
-		makeOrg("org-id-1", "org-1", "Org 1", myUserID),
+		makeOrg("org-id-1", "org-1", "Org 1", myUserID, "flexible"),
 	})
 
 	projectID := mockapi.ProjectID()
