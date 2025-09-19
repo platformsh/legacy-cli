@@ -18,7 +18,7 @@ func TestProjectCreate(t *testing.T) {
 
 	apiHandler := mockapi.NewHandler(t)
 	apiHandler.SetOrgs([]*mockapi.Org{
-		makeOrg("cli-test-id", "cli-tests", "CLI Test Org", "my-user-id"),
+		makeOrg("cli-test-id", "cli-tests", "CLI Test Org", "my-user-id", "flexible"),
 	})
 
 	apiServer := httptest.NewServer(apiHandler)
@@ -185,7 +185,7 @@ func TestProjectCreate_CanCreateError(t *testing.T) {
 
 	orgs := make([]*mockapi.Org, 0, len(cases))
 	for _, c := range cases {
-		orgs = append(orgs, makeOrg(c.orgName+"-id", c.orgName, c.orgName, "my-user-id"))
+		orgs = append(orgs, makeOrg(c.orgName+"-id", c.orgName, c.orgName, "my-user-id", "flexible"))
 		apiHandler.SetCanCreate(c.orgName+"-id", c.canCreateResponse)
 	}
 	apiHandler.SetOrgs(orgs)

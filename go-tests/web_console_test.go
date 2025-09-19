@@ -20,7 +20,7 @@ func TestWebConsole(t *testing.T) {
 	orgID := "org-" + mockapi.NumericID()
 
 	apiHandler.SetOrgs([]*mockapi.Org{
-		makeOrg(orgID, "cli-tests", "CLI Test Org", "my-user-id"),
+		makeOrg(orgID, "cli-tests", "CLI Test Org", "my-user-id", "flexible"),
 	})
 
 	apiHandler.SetProjects([]*mockapi.Project{{
