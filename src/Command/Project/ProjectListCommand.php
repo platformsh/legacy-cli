@@ -56,6 +56,9 @@ class ProjectListCommand extends CommandBase
 
         if ($organizationsEnabled) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name or ID');
+            if ($this->config()->get('api.organization_types')) {
+                $this->addOption('org-type', null, InputOption::VALUE_REQUIRED, 'Filter by organization type');
+            }
         }
 
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
@@ -87,6 +90,9 @@ class ProjectListCommand extends CommandBase
         }
         if ($input->hasOption('org') && $input->getOption('org') !== null) {
             $filters['org'] = $input->getOption('org');
+        }
+        if ($input->hasOption('org-type') && $input->getOption('org-type') !== null) {
+            $filters['org-type'] = $input->getOption('org-type');
         }
         $this->filterProjects($projects, $filters);
 
@@ -262,6 +268,15 @@ class ProjectListCommand extends CommandBase
                             return $isID ? $info->organization_ref->id === $value : $info->organization_ref->name === $value;
                         }
                         return false;
+                    });
+                    break;
+
+                case 'org-type':
+                    $projects = \array_filter($projects, function (BasicProjectInfo $info) use ($value) {
+                        if (empty($info->organization_ref)) {
+                            return false;
+                        }
+                        return $info->organization_ref->getProperty('type', false) === $value;
                     });
                     break;
             }

@@ -101,6 +101,11 @@ project-id-1	Project 1	region-1	org-1	flexible
 `, f.Run("pro", "-v", "--format", "plain", "--my"))
 
 	assertTrimmed(t, `
+ID	Title	Region	Org name	Org type
+project-id-1	Project 1	region-1	org-1	flexible
+`, f.Run("pro", "-v", "--format", "plain", "--org-type", "flexible"))
+
+	assertTrimmed(t, `
 project-id-1
 project-id-2
 project-id-3
