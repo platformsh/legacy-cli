@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Self\SelfInstallCommand;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Console\BufferedOutputWithErrorOutput;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
@@ -1070,6 +1071,27 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $projectId = $this->offerProjectChoice($myProjects);
 
                 return $this->selectProject($projectId);
+            }
+            if ($this->config()->isCommandEnabled('project:create')) {
+                $this->debug('No project specified: offering to create one...');
+                $questionText = 'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
+                    . "\nDo you want to create one?";
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
+                if ($questionHelper->confirm($questionText)) {
+                    $this->stdErr->writeln('');
+                    $buffer = new BufferedOutputWithErrorOutput($this->stdErr);
+                    if ($this->runOtherCommand('project:create', [], $buffer) !== 0) {
+                        throw new ConsoleInvalidArgumentException('A project is required');
+                    }
+                    if (!$id = trim($buffer->fetch())) {
+                        throw new \RuntimeException('Failed to receive project ID from create command');
+                    }
+                    if (!$project = $this->api()->getProject($id)) {
+                        throw new \RuntimeException('Failed to fetch project: ' . $id);
+                    }
+                    $this->project = $project;
+                }
             }
         }
         if (!$this->project) {
