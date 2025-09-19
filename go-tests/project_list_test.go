@@ -72,31 +72,31 @@ func TestProjectList(t *testing.T) {
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
 	assertTrimmed(t, `
-+--------------+-----------+----------+--------------+
-| ID           | Title     | Region   | Organization |
-+--------------+-----------+----------+--------------+
-| project-id-1 | Project 1 | region-1 | org-1        |
-| project-id-2 | Project 2 | region-2 | org-2        |
-| project-id-3 | Project 3 | region-2 | org-2        |
-+--------------+-----------+----------+--------------+
++--------------+-----------+----------+----------+
+| ID           | Title     | Region   | Org name |
++--------------+-----------+----------+----------+
+| project-id-1 | Project 1 | region-1 | org-1    |
+| project-id-2 | Project 2 | region-2 | org-2    |
+| project-id-3 | Project 3 | region-2 | org-2    |
++--------------+-----------+----------+----------+
 `, f.Run("pro", "-v"))
 
 	assertTrimmed(t, `
-ID	Title	Region	Organization
+ID	Title	Region	Org name
 project-id-1	Project 1	region-1	org-1
 project-id-2	Project 2	region-2	org-2
 project-id-3	Project 3	region-2	org-2
 `, f.Run("pro", "-v", "--format", "plain"))
 
 	assertTrimmed(t, `
-ID,Organization ID
+ID,Org ID
 project-id-1,org-id-1
 project-id-2,org-id-2
 project-id-3,org-id-2
 `, f.Run("pro", "-v", "--format", "csv", "--columns", "id,organization_id"))
 
 	assertTrimmed(t, `
-ID	Title	Region	Organization
+ID	Title	Region	Org name
 project-id-1	Project 1	region-1	org-1
 `, f.Run("pro", "-v", "--format", "plain", "--my"))
 
