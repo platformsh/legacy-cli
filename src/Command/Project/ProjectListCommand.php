@@ -23,6 +23,7 @@ class ProjectListCommand extends CommandBase
         'organization_name' => 'Organization',
         'organization_id' => 'Organization ID',
         'organization_label' => 'Organization label',
+        'organization_type' => 'Organization type',
         'status' => 'Status',
         'created_at' => 'Created',
     ];
@@ -34,6 +35,9 @@ class ProjectListCommand extends CommandBase
         $this->defaultColumns = ['id', 'title', 'region'];
         if ($organizationsEnabled) {
             $this->defaultColumns[] = 'organization_name';
+            if ($this->config()->get('api.organization_types')) {
+                $this->defaultColumns[] = 'organization_type';
+            }
         }
         $this
             ->setName('project:list')
@@ -172,6 +176,7 @@ class ProjectListCommand extends CommandBase
                 'organization_id' => $orgInfo ? $orgInfo->id : '',
                 'organization_name' => $orgInfo ? $orgInfo->name : '',
                 'organization_label' => $orgInfo ? $orgInfo->label : '',
+                'organization_type' => $orgInfo ? (string) $orgInfo->getProperty('type', false) : '',
                 'status' => $projectInfo->status,
                 'created_at' => $formatter->format($projectInfo->created_at, 'created_at'),
                 '[deprecated]' => '',
