@@ -22,7 +22,7 @@ class ProjectListCommand extends CommandBase
         'region' => 'Region',
         'organization_name' => 'Org name',
         'organization_id' => 'Org ID',
-        'organization_label' => 'Organization',
+        'organization_label' => 'Org label',
         'organization_type' => 'Org type',
         'status' => 'Status',
         'created_at' => 'Created',
@@ -34,7 +34,7 @@ class ProjectListCommand extends CommandBase
         $organizationsEnabled = $this->config()->getWithDefault('api.organizations', false);
         $this->defaultColumns = ['id', 'title', 'region'];
         if ($organizationsEnabled) {
-            $this->defaultColumns[] = 'organization_label';
+            $this->defaultColumns[] = 'organization_name';
             if ($this->config()->get('api.organization_types')) {
                 $this->defaultColumns[] = 'organization_type';
             }
