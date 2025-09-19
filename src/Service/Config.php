@@ -408,6 +408,11 @@ class Config
         if ($this->getEnv('NO_LEGACY_WARNING')) {
             $this->config['migrate']['prompt'] = false;
         }
+
+        // Special case: replace the list api.organization_types with the (split) value of {PREFIX}API_ORGANIZATION_TYPES.
+        if (($value = $this->getEnv('API_ORGANIZATION_TYPES')) !== false) {
+            $this->config['api']['organization_types'] = $value === '' ? [] : \preg_split('/[,\s]+/', $value);
+        }
     }
 
     /**
