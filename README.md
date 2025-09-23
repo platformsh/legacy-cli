@@ -1,4 +1,6 @@
-The **Legacy** Platform.sh CLI is the legacy version of the command-line interface for [Platform.sh](https://platform.sh). For the **current Platform.sh CLI**, check [this repository](https://github.com/platformsh/cli).
+The **Legacy** CLI is the legacy version of the command-line interface for [Upsun (formerly Platform.sh)](https://upsun.com).
+
+For the **current Upsun CLI**, check [this repository](https://github.com/platformsh/cli).
 
 ## Install
 
@@ -53,7 +55,7 @@ scoop update platform
 
 ## Usage
 
-You can run the Platform.sh CLI in your shell by typing `platform`.
+You can run this CLI in your shell by typing `platform`.
 
     platform
 
@@ -96,7 +98,7 @@ Other customization is available via environment variables, including:
 * `PLATFORMSH_CLI_SSH_AUTO_LOAD_CERT`: set to 0 to disable automatic loading of an SSH certificate when running login or SSH commands
 * `PLATFORMSH_CLI_REPORT_DEPRECATIONS`: set to 1 to enable PHP deprecation notices (suppressed by default). They will only be displayed in debug mode (`-vvv`).
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
-* `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
+* `http_proxy` or `https_proxy`: specify an HTTP proxy
 
 ## Known issues
 
