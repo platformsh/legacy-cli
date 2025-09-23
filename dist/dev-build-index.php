@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * @file
- * This is the index.php script for automated CLI builds on Platform.sh.
+ * This is the index.php script for automated CLI builds on Upsun.
  */
 
 use Platformsh\Cli\Service\Config;
