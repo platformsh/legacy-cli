@@ -1,12 +1,10 @@
 # Contributing
 
-Development of the Platform.sh Legacy CLI happens in public in the
-[GitHub repository](https://github.com/platformsh/legacy-cli).
+Development of the Legacy CLI happens in public in the [GitHub repository](https://github.com/platformsh/legacy-cli).
 
 Issues and pull requests submitted via GitHub are very welcome.
 
-In the near future - to be confirmed - this may move to being a subtree split
-of the new CLI repository at: https://github.com/platformsh/cli
+The principal Upsun CLI repository is: https://github.com/platformsh/cli
 
 ## Developing locally
 
@@ -30,8 +28,8 @@ Run tests with:
 
 ## Developing in a docker container
 
-If you don't have PHP installed locally or for other reasons want to do development on the
-Platform.sh CLI inside a docker container, follow this procedure:
+If you don't have PHP installed locally or for other reasons want to do development on the CLI inside a docker
+container, follow this procedure:
 
 Create a `.env` file based on the default one
 
