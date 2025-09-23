@@ -2329,12 +2329,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
 
-        $userId = $this->api()->getMyUserId();
-        $organizations = $this->api()->getClient()->listOrganizationsWithMember($userId);
-
         if (!$input->isInteractive()) {
             throw new ConsoleInvalidArgumentException('An organization name or ID (--org) is required.');
         }
+
+        $userId = $this->api()->getMyUserId();
+        $organizations = $this->api()->getClient()->listOrganizationsWithMember($userId);
+
         if (!$organizations) {
             throw new NoOrganizationsException('No organizations found.', 0);
         }
