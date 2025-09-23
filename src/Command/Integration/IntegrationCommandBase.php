@@ -185,7 +185,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'splunk',
             'sumologic',
             'syslog',
-            'otlp',
+            'otlplog',
         ];
 
         return [
@@ -419,7 +419,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'sumologic',
                     'splunk',
                     'webhook',
-                    'otlp',
+                    'otlplog',
                 ]],
                 'description' => 'The URL or API endpoint for the integration',
             ]),
@@ -596,7 +596,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'splunk',
                     'sumologic',
                     'syslog',
-                    'otlp',
+                    'otlplog',
                 ]],
                 'description' => 'Whether HTTPS certificate verification should be enabled (recommended)',
                 'questionLine' => 'Should HTTPS certificate verification be enabled (recommended)',
@@ -608,7 +608,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'optionName' => 'header',
                 'conditions' => ['type' => [
                     'httplog',
-                    'otlp',
+                    'otlplog',
                 ]],
                 'description' => 'HTTP header(s) to use in POST requests. Separate names and values with a colon (:).',
                 'required' => false,
