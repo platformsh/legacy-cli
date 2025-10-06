@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.26.0",
-        "sha1": "d4776f19987f3159f12c99e2bb39fd37bbe59245",
-        "sha256": "4b215a9abe473cf475a4fe5fc1d9e32234d1ac9bee615a600e9c5ca5d88d03e1",
+        "version": "4.27.0",
+        "sha1": "62e5f46d69cf191324b2baa4a0ee9aa1487d564a",
+        "sha256": "77b998915dc64a2141809dec08a7e9988045376e4bbcb99005512249813b9c61",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.26.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.27.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -76,7 +76,8 @@
             "4.23.0": "New features:\n\n* Add Valkey support\n* Refresh the token and retry requests on a 401 error in :curl commands\n\nOther functional changes:\n\n* Rename \"web\" command to \"console\" (\"web\" remains as an alias)\n* Show \"(legacy)\" in the version output, if not wrapped.\n* Fix the console URL in the project:create (create) command\n* Fix duplication of commands in Markdown-formatted list\n* installer: fix use of GitHub credentials on container where available\n* Update composer/ca-bundle and drush/drush dependencies\n\nDevelopment-related changes:\n\n* Add Golang integration tests in `/go-tests`\n* Run tests and security checks in GitHub Actions\n* Use Composer 2 in dev builds\n* Remove composer-bin-plugin\n* Update countries script for new CLDR format",
             "4.24.0": "New features:\n\n* Support guaranteed resources, adding a new CPU type concept (`shared` or\n  `guaranteed`) to the `resources` commands.\n* Support manual deployments:\n  - Add an `environment:deploy` command to deploy staged changes.\n  - Add an `environment:deploy:type` command to view or change the deployment\n    type (between `manual` and `automatic`).\n  - Add a `deployment_type` property (read-only) to the `environment:info`\n    command.\n  - Support the `staged` activity state in activity-related commands.\n\nOther changes:\n\n* Increase the default limits for finding activities.\n* Stop bypassing the organization endpoint for subscriptions.\n* Update Go test dependencies.\n* Add `mark_unwrapped_legacy` config option (defaults to `false`).",
             "4.25.0": "New features:\n\n* Autoscaling-related features:\n    - Add an `autoscaling` command to read autoscaling settings.\n    - Mark services with autoscaling in the `resources` command.\n    - Disallow changing the instance count in `resources:set` when autoscaling is enabled.\n* Support the OpenTelemetry Protocol (`otlp`) integration, when available on the project.\n* Add a `--strategy` (`-s`) option to the `env:deploy` command (`stopstart` or `rolling`).\n* Require confirmation on `branch` or `env:activate` commands when guaranteed resources are configured.\n\nOther changes:\n\n* Update embedded docs links to the new permalink structure.\n* Avoid writing to stdout when opening a URL.\n* Treat `upsun` and `platformsh` vendors as equivalent in the project list from 2025-09-23.\n* Fix the command recommendation when there are staged activities.\n* Fix the Drush site URL when there is no app route (e.g. with Varnish).",
-            "4.26.0": "New features:\n\n* Add `autoscaling:set` command, to configure CPU-based autoscaling\n* Add support for organization types\n  - Display the organization type in the `orgs` list\n  - Add a `--type` filter in the `orgs` list\n  - Add a `--type` option to `org:create`\n  - Display the organization type in the `projects` list\n  - Add an `--org-type` filter in the `projects` list\n* Add a `deploy` alias for the `env:deploy` command\n\nOther changes:\n\n* Fix \"This environment is inactive\" during activation, if the deployment cannot \n  be fetched."
+            "4.26.0": "New features:\n\n* Add `autoscaling:set` command, to configure CPU-based autoscaling\n* Add support for organization types\n  - Display the organization type in the `orgs` list\n  - Add a `--type` filter in the `orgs` list\n  - Add a `--type` option to `org:create`\n  - Display the organization type in the `projects` list\n  - Add an `--org-type` filter in the `projects` list\n* Add a `deploy` alias for the `env:deploy` command\n\nOther changes:\n\n* Fix \"This environment is inactive\" during activation, if the deployment cannot \n  be fetched.",
+            "4.27.0": "* Support `memory` as a trigger for autoscaling\n* Set `--fail-with-body` by default in `:curl` commands\n* Update name of `otlp` integration to `otlplog`"
         }
     },
     {
