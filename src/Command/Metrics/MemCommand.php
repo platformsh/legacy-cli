@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'metrics:memory', description: 'Show memory usage of an environment', aliases: ['mem', 'memory'])]
-class MemCommand extends MetricsCommandBase
+class MemCommand extends AbstractMetricsCommandBase
 {
     /** @var array<string, string> */
     private array $tableHeader = [

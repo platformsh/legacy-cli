@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'metrics:cpu', description: 'Show CPU usage of an environment', aliases: ['cpu'])]
-class CpuCommand extends MetricsCommandBase
+class CpuCommand extends AbstractMetricsCommandBase
 {
     /** @var array<string, string> */
     private array $tableHeader = [

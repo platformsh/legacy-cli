@@ -28,7 +28,7 @@ use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-abstract class MetricsCommandBase extends CommandBase
+abstract class AbstractMetricsCommandBase extends CommandBase
 {
     private Io $io;
     private PropertyFormatter $propertyFormatter;

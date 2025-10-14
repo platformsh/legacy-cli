@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'metrics:all', description: 'Show CPU, disk and memory metrics for an environment', aliases: ['metrics', 'met'])]
-class AllMetricsCommand extends MetricsCommandBase
+class AllMetricsCommand extends AbstractMetricsCommandBase
 {
     /** @var array<string, string> */
     private array $tableHeader = [

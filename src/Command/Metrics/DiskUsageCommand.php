@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'metrics:disk-usage', description: 'Show disk usage of an environment', aliases: ['disk'])]
-class DiskUsageCommand extends MetricsCommandBase
+class DiskUsageCommand extends AbstractMetricsCommandBase
 {
     /** @var array<string, string> */
     private array $tableHeader = [

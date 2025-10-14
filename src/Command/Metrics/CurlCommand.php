@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'metrics:curl', description: "Run an authenticated cURL request on an environment's metrics API")]
-class CurlCommand extends MetricsCommandBase
+class CurlCommand extends AbstractMetricsCommandBase
 {
     protected bool $hiddenInList = true;
     public function __construct(private readonly CurlCli $curlCli, private readonly Selector $selector)
