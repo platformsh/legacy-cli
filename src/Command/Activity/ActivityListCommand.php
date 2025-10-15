@@ -135,7 +135,7 @@ class ActivityListCommand extends ActivityCommandBase
                 'type' => new AdaptiveTableCell($activity->type, ['wrap' => false]),
                 'progress' => $activity->getCompletionPercent() . '%',
                 'state' => ActivityMonitor::formatState($activity->state),
-                'result' => ActivityMonitor::formatResult($activity->result, !$this->table->formatIsMachineReadable()),
+                'result' => ActivityMonitor::formatResult($activity, !$this->table->formatIsMachineReadable()),
                 'environments' => implode(', ', $activity->environments),
             ];
             $timings = $activity->getProperty('timings', false, false) ?: [];
