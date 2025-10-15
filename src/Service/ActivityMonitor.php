@@ -586,9 +586,18 @@ class ActivityMonitor
     /**
      * Formats an activity result.
      */
-    public static function formatResult(string $result, bool $decorate = true): string
+    public static function formatResult(Activity $activity, bool $decorate = true): string
     {
+        $result = $activity->result;
         $name = self::RESULT_NAMES[$result] ?? $result;
+
+        foreach ($activity->commands ?? [] as $command) {
+            if ($command['exit_code'] > 0) {
+                $name = Activity::RESULT_FAILURE;
+                $result = Activity::RESULT_FAILURE;
+                break;
+            }
+        }
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
