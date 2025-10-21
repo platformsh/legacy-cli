@@ -403,7 +403,7 @@ class Application extends ParentApplication
     public function getLongVersion(): string
     {
         // Show "(legacy)" in the version output, if not wrapped.
-        if (!$this->config->isWrapped()) {
+        if (!$this->config->isWrapped() && $this->config->getBool('application.mark_unwrapped_legacy')) {
             return sprintf('%s (legacy) <info>%s</info>', $this->config->getStr('application.name'), $this->config->getVersion());
         }
         return sprintf('%s <info>%s</info>', $this->config->getStr('application.name'), $this->config->getVersion());

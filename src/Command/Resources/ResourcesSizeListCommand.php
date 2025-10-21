@@ -19,7 +19,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
     /** @var array<string, string> */
-    protected array $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
+    protected array $tableHeader = [
+        'size' => 'Size name',
+        'cpu' => 'CPU',
+        'memory' => 'Memory (MB)',
+        'cpu_type' => 'CPU type',
+    ];
+
+    /** @var string[] */
+    protected array $defaultColumns = ['size', 'cpu', 'memory'];
+
     public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
@@ -33,7 +42,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addCompleter($this->selector);
-        Table::configureInput($this->getDefinition(), $this->tableHeader);
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -57,7 +66,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             $servicesByProfile[$service->container_profile][] = $name;
         }
 
-        $containerProfiles = $nextDeployment->container_profiles;
+        $containerProfiles = $this->sortContainerProfiles($nextDeployment->container_profiles);
 
         if ($serviceOption = $input->getOption('service')) {
             if (!isset($services[$serviceOption])) {
@@ -86,8 +95,21 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         }
 
         $rows = [];
+        $supportsGuaranteedCPU = $this->api->supportsGuaranteedCPU($selection->getProject(), $nextDeployment);
+        $defaultColumns = $this->defaultColumns;
+        if ($supportsGuaranteedCPU) {
+            $defaultColumns[] = 'cpu_type';
+        }
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            $rows[] = ['size' => $sizeName, 'cpu' => $this->resourcesUtil->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
+            if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] === 'guaranteed') {
+                continue;
+            }
+            $rows[] = [
+                'size' => $sizeName,
+                'cpu' => $this->resourcesUtil->formatCPU($sizeInfo['cpu']),
+                'memory' => $sizeInfo['memory'],
+                'cpu_type' => $sizeInfo['cpu_type'] ?? '',
+            ];
         }
 
         if (!$this->table->formatIsMachineReadable()) {
@@ -103,7 +125,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             }
         }
 
-        $this->table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader, $defaultColumns);
 
         return 0;
     }

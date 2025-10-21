@@ -346,8 +346,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     private function getRoutesList(string $projectRoot, string $address): array
     {
-        $localProject = $this->localProject;
-        $routesConfig = (array) $localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
+        $routesConfig = (array) $this->localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
 
         $routes = [];
         foreach ($routesConfig as $route => $config) {

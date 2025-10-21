@@ -42,23 +42,41 @@ class OrganizationCreateCommand extends OrganizationCommandBase
     private function getForm(): Form
     {
         $countryList = $this->countryService->listCountries();
-        return Form::fromArray([
-            'label' => new Field('Label', [
-                'description' => 'The full name of the organization, e.g. "ACME Inc."',
-            ]),
-            'name' => new Field('Name', [
-                'description' => 'The organization machine name, used for URL paths and similar purposes.',
-                'defaultCallback' => fn($values) => isset($values['label']) ? (new Slugify())->slugify($values['label']) : null,
-            ]),
-            'country' => new OptionsField('Country', [
-                'description' => 'The organization country. Used as the default for the billing address.',
-                'options' => $countryList,
-                'asChoice' => false,
-                'defaultCallback' => fn() => $this->api->getUser()->country ?: null,
-                'normalizer' => $this->countryService->countryToCode(...),
-                'validator' => fn($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
-            ]),
+        $fields = [];
+        $fields['label'] = new Field('Label', [
+            'description' => 'The full name of the organization, e.g. "ACME Inc."',
         ]);
+        if ($orgTypes = $this->config->get('api.organization_types')) {
+            $options = [];
+            foreach ((array) $orgTypes as $type) {
+                $options[$type] = ucfirst($type);
+            }
+            $fields['type'] = new OptionsField('Type', [
+                'description' => 'The organization type.',
+                'options' => $options,
+                'default' => $this->config->getWithDefault('api.default_organization_type', key($options)),
+            ]);
+        }
+        $fields['name'] = new Field('Name', [
+            'description' => 'The organization machine name, used for URL paths and similar purposes.',
+            'defaultCallback' => function ($values) {
+                return isset($values['label']) ? (new Slugify())->slugify($values['label']) : null;
+            },
+        ]);
+        $fields['country'] = new OptionsField('Country', [
+            'description' => 'The organization country. Used as the default for the billing address.',
+            'options' => $countryList,
+            'asChoice' => false,
+            'defaultCallback' => function () {
+                return $this->api->getUser()->country ?: null;
+            },
+            'normalizer' => function ($value) { return $this->countryService->countryToCode($value); },
+            'validator' => function ($countryCode) use ($countryList) {
+                return isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode";
+            },
+        ]);
+
+        return Form::fromArray($fields);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -76,7 +94,13 @@ class OrganizationCreateCommand extends OrganizationCommandBase
         }
 
         try {
-            $organization = $client->createOrganization($values['name'], $values['label'], $values['country']);
+            $organization = $client->createOrganization(
+                $values['name'],
+                $values['label'],
+                $values['country'],
+                '',
+                $values['type'] ?? ''
+            );
         } catch (BadResponseException $e) {
             if ($e->getResponse()->getStatusCode() === 409) {
                 $this->stdErr->writeln(\sprintf('An organization already exists with the same name: <error>%s</error>', $values['name']));

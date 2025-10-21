@@ -156,7 +156,8 @@ class ActivityMonitor
 
             // Exit the loop if the log finished and the activity is complete.
             if ($seal) {
-                if ($activity->isComplete() || $activity->state === Activity::STATE_CANCELLED) {
+                if ($activity->isComplete() || $activity->state === Activity::STATE_CANCELLED
+                    || $activity->state === Activity::STATE_STAGED) {
                     break;
                 }
                 continue;
@@ -541,13 +542,8 @@ class ActivityMonitor
 
     /**
      * Prints the result of an activity: success, failure, or cancelled.
-     *
-     * @param Activity $activity
-     * @param bool $logOnFailure
-     *
-     * @return bool Success or failure.
      */
-    private function printResult(Activity $activity, bool $logOnFailure = false): bool
+    private function printResult(Activity $activity, bool $logOnFailure = false): void
     {
         $stdErr = $this->stdErr;
 
@@ -555,23 +551,27 @@ class ActivityMonitor
         switch ($activity->result) {
             case Activity::RESULT_SUCCESS:
                 $stdErr->writeln('The activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
-                return true;
-
+                break;
             case Activity::RESULT_FAILURE:
                 if ($activity->state === Activity::STATE_CANCELLED) {
                     $stdErr->writeln('The activity was cancelled: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
-                    return false;
+                    break;
                 }
                 $stdErr->writeln('The activity failed: ' . self::getFormattedDescription($activity, true, true, 'red'));
                 if ($logOnFailure) {
                     $stdErr->writeln('  <error>Log:</error>');
                     $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                 }
-                return false;
-
+                break;
             default:
                 $stdErr->writeln('The activity finished with an unknown result: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
-                return false;
+        }
+
+        if ($activity->state === Activity::STATE_STAGED) {
+            $stdErr->writeln(sprintf(
+                'To deploy staged changes, run: <info>%s env:deploy</info>',
+                $this->config->getStr('application.executable'),
+            ));
         }
     }
 

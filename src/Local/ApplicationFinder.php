@@ -120,7 +120,7 @@ readonly class ApplicationFinder
     /**
      * Returns the root directory explicitly configured for the application, if any.
      *
-     * @see https://docs.platform.sh/configuration/app/multi-app.html#explicit-sourceroot
+     * @see https://docs.upsun.com/anchors/fixed/app/multiple/source/root/
      *
      * @param array<string, mixed> $appConfig
      * @param string $sourceDir

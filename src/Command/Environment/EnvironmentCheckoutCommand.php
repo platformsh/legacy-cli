@@ -83,8 +83,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         // Make sure that remotes are set up correctly.
-        $localProject = $this->localProject;
-        $localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
+        $this->localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.

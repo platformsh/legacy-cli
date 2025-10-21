@@ -185,21 +185,30 @@ class ResourcesUtil
      * @param int|float|string|null $previousValue
      * @param int|float|string|null $newValue
      * @param string $suffix A unit suffix e.g. ' MB'
+     * @param callable|null $comparator
      *
      * @return string
      */
-    public function formatChange(int|float|string|null $previousValue, int|float|string|null $newValue, string $suffix = ''): string
+    public function formatChange(int|float|string|null $previousValue, int|float|string|null $newValue, string $suffix = '', ?callable $comparator = null): string
     {
         if ($previousValue === null || $newValue === $previousValue) {
             return sprintf('<info>%s%s</info>', $newValue, $suffix);
         }
+        if ($comparator !== null) {
+            $changeText = $comparator($previousValue, $newValue) ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>';
+        } elseif ($newValue === "true" || $newValue === "false") {
+            $color = $newValue === "true" ? 'green' : 'yellow';
+            $changeText = '<fg=' . $color . '>changing</>';
+        } else {
+            $changeText = $newValue > $previousValue ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>';
+        }
         return sprintf(
             '%s from %s%s to <info>%s%s</info>',
-            $newValue > $previousValue ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>',
+            $changeText,
             $previousValue,
             $suffix,
             $newValue,
-            $suffix,
+            $suffix
         );
     }
 

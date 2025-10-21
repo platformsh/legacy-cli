@@ -13,6 +13,7 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -113,7 +114,7 @@ class EnvironmentActivateCommand extends CommandBase
                         ]) === 0;
                     }
                     $output->writeln(sprintf(
-                        'To resume the environment, run: <comment>%s environment:resume</comment>',
+                        'To resume the environment, run: <comment>%s env:resume</comment>',
                         $this->config->getStr('application.executable'),
                     ));
                     $count--;
@@ -132,7 +133,20 @@ class EnvironmentActivateCommand extends CommandBase
                 }
                 continue;
             }
+
+            try {
+                $hasGuaranteedCPU = $this->api->environmentHasGuaranteedCPU($environment, $project);
+            } catch (EnvironmentStateException) {
+                $hasGuaranteedCPU = false;
+            }
+
             $question = "Are you sure you want to activate the environment " . $this->api->getEnvironmentLabel($environment) . "?";
+            if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config->has('warnings.guaranteed_resources_branch_msg')) {
+                $this->stdErr->writeln('');
+                $question = trim($this->config->getStr('warnings.guaranteed_resources_branch_msg'))
+                    . "\n\n" . $question;
+            }
+
             if (!$this->questionHelper->confirm($question)) {
                 continue;
             }

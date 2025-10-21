@@ -79,7 +79,7 @@ class EnvironmentSshCommand extends CommandBase
                     $this->stdErr->writeln(sprintf('The environment %s is paused, so an SSH connection is not possible.', $this->api->getEnvironmentLabel($e->getEnvironment(), 'error')));
                     if ($this->config->isCommandEnabled('environment:resume')) {
                         $this->stdErr->writeln('');
-                        $this->stdErr->writeln(sprintf('Resume the environment by running: <info>%s environment:resume -e %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($environment->id)));
+                        $this->stdErr->writeln(sprintf('Resume the environment by running: <info>%s env:resume -e %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($environment->id)));
                     }
                     return 1;
             }

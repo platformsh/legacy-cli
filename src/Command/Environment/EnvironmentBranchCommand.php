@@ -173,6 +173,17 @@ class EnvironmentBranchCommand extends CommandBase
             $this->stdErr->writeln('Resource sizes will be inherited from the parent environment.');
         }
 
+        $hasGuaranteedCPU = $this->api->environmentHasGuaranteedCPU($parentEnvironment, $selectedProject);
+        if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config->has('warnings.guaranteed_resources_branch_msg')) {
+            $this->stdErr->writeln('');
+            $questionText = trim($this->config->getStr('warnings.guaranteed_resources_branch_msg'))
+                . "\n\n" . "Are you sure you want to continue?";
+
+            if (!$this->questionHelper->confirm($questionText)) {
+                return 1;
+            }
+        }
+
         if ($dryRun) {
             $this->stdErr->writeln('');
             if ($checkoutLocally) {
@@ -195,6 +206,7 @@ class EnvironmentBranchCommand extends CommandBase
             if ($resourcesInit !== null) {
                 $params['resources']['init'] = $resourcesInit;
             }
+
             $result = $parentEnvironment->runOperation('branch', 'POST', $params);
             $activities = $result->getActivities();
 

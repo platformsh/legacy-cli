@@ -51,7 +51,7 @@ class SubscriptionInfoCommand extends CommandBase
             $id = (string) $project->getSubscriptionId();
         }
 
-        $subscription = $this->api->loadSubscription($id, $project, $input->getArgument('value') !== null);
+        $subscription = $this->api->loadSubscription($id, $project);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 

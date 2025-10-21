@@ -78,7 +78,7 @@ class ActivityListCommand extends ActivityCommandBase
             ActivityLoader::getAvailableTypes(),
         );
 
-        $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
+        $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', self::DEFAULT_LIST_LIMIT)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP, null, self::STATE_VALUES)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure', null, self::RESULT_VALUES)
@@ -165,7 +165,8 @@ class ActivityListCommand extends ActivityCommandBase
         if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
 
-            $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
+            // TODO make this more deterministic by fetching limit+1 activities
+            $max = ((int) $input->getOption('limit') ?: self::DEFAULT_LIST_LIMIT);
             $maybeMoreAvailable = count($activities) === $max;
             if ($maybeMoreAvailable) {
                 $this->stdErr->writeln('');

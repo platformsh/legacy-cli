@@ -30,6 +30,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
+    protected const DEFAULT_LIST_LIMIT = 10; // Display a digestible number of activities by default.
+    protected const DEFAULT_FIND_LIMIT = 25; // This is the current limit per page of results.
+
     private Selector $selector;
     private Table $table;
     private QuestionHelper $questionHelper;
@@ -176,14 +179,11 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @return array{enabled: bool, config?: array<string, array{enabled: bool}>}
      */
-    private function selectedProjectIntegrations(): array
+    private function selectedProjectIntegrationCapabilities(): array
     {
-        static $cache = [];
-        $project = $this->selection->getProject();
-        if (!isset($cache[$project->id])) {
-            $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
-        }
-        return $cache[$project->id];
+        return $this->api
+            ->getProjectCapabilities($this->selection->getProject())
+            ->integrations;
     }
 
     /**
@@ -207,6 +207,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'splunk',
             'sumologic',
             'syslog',
+            'otlplog',
         ];
 
         return [
@@ -222,7 +223,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     }
                     // If the type is supported, check if it is available on the project.
                     if ($this->selection->hasProject()) {
-                        $integrations = $this->selectedProjectIntegrations();
+                        $integrations = $this->selectedProjectIntegrationCapabilities();
                         if (!empty($integrations['enabled']) && empty($integrations['config'][$value]['enabled'])) {
                             return "The integration type '$value' is not available on this project.";
                         }
@@ -231,7 +232,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 },
                 'optionsCallback' => function () use ($allSupportedTypes): array {
                     if ($this->selection->hasProject()) {
-                        $integrations = $this->selectedProjectIntegrations();
+                        $integrations = $this->selectedProjectIntegrationCapabilities();
                         if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
                             return array_filter($allSupportedTypes, fn($type): bool => !empty($integrations['config'][$type]['enabled']));
                         }
@@ -434,6 +435,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'sumologic',
                     'splunk',
                     'webhook',
+                    'otlplog',
                 ]],
                 'description' => 'The URL or API endpoint for the integration',
             ]),
@@ -610,6 +612,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'splunk',
                     'sumologic',
                     'syslog',
+                    'otlplog',
                 ]],
                 'description' => 'Whether HTTPS certificate verification should be enabled (recommended)',
                 'questionLine' => 'Should HTTPS certificate verification be enabled (recommended)',
@@ -619,7 +622,10 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'headers' => new ArrayField('HTTP header', [
                 'optionName' => 'header',
-                'conditions' => ['type' => 'httplog'],
+                'conditions' => ['type' => [
+                    'httplog',
+                    'otlplog',
+                ]],
                 'description' => 'HTTP header(s) to use in POST requests. Separate names and values with a colon (:).',
                 'required' => false,
                 // Override the default split pattern (which splits a comma-separated

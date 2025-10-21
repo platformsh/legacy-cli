@@ -12,6 +12,7 @@ application:
   manifest_url: 'https://platform.sh/cli/manifest.json'
   github_repo: 'platformsh/legacy-cli'
 
+  mark_unwrapped_legacy: true
   wrapped_disabled_commands:
     - self:install
     - self:update
@@ -37,15 +38,18 @@ service:
 
   pricing_url: 'https://platform.sh/pricing'
 
-  activity_type_list_url: 'https://docs.platform.sh/integrations/activity/reference.html#type'
+  activity_type_list_url: 'https://docs.upsun.com/anchors/fixed/integrations/activity-scripts/type/'
 
-  runtime_operations_help_url: 'https://docs.platform.sh/create-apps/runtime-operations.html'
+  runtime_operations_help_url: 'https://docs.upsun.com/anchors/fixed/app/runtime-operations/'
 
 api:
   base_url: 'https://api.platform.sh'
 
   auth_url: 'https://auth.api.platform.sh'
   oauth2_client_id: 'platform-cli'
+
+  organization_types: [flexible, fixed]
+  default_organization_type: flexible
 
   organizations: true
   user_verification: true
@@ -65,7 +69,7 @@ detection:
 
 migrate:
   prompt: true
-  docs_url: https://docs.platform.sh/administration/cli.html
+  docs_url: https://docs.upsun.com/anchors/fixed/cli/
 
 warnings:
   non_production_domains_msg: |
@@ -73,4 +77,13 @@ warnings:
     If you're an Enterprise or Elite customer, contact support to enable the feature.
     Otherwise contact sales first to upgrade your plan.
 
-    See: https://docs.platform.sh/overview/get-support.html
+    See: https://docs.upsun.com/anchors/fixed/get-support/
+
+  guaranteed_resources_msg: |
+    You have chosen to allocate guaranteed resources for app(s) and/or service(s).
+    This change may affect resource costs. See: <info>https://upsun.com/pricing/</info>
+
+    This process requires a redeployment of containers on their own host, which may take a few minutes to complete.
+
+  guaranteed_resources_branch_msg: |
+    Guaranteed resources from the parent will be provisioned, impacting your bill.

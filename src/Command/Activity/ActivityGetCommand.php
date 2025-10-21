@@ -87,7 +87,7 @@ class ActivityGetCommand extends ActivityCommandBase
             $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, self::DEFAULT_FIND_LIMIT) ?: [], 'Activity');
             }
         } else {
             $activities = $this->activityLoader->loadFromInput($apiResource, $input, 1);

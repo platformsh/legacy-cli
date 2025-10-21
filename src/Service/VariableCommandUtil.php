@@ -110,9 +110,6 @@ class VariableCommandUtil
      */
     public function displayVariable(ApiResourceBase $variable): void
     {
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $properties = $variable->getProperties();
         $properties['level'] = $this->getVariableLevel($variable);
 
@@ -123,9 +120,9 @@ class VariableCommandUtil
             if ($key === 'value') {
                 $value = wordwrap((string) $value, 80, "\n", true);
             }
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
     }
 
     public function getVariableLevel(ApiResourceBase $variable): string

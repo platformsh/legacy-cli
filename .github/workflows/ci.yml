@@ -54,9 +54,9 @@ jobs:
         ./scripts/test/unit.sh
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.22
+        go-version: 1.25
         cache-dependency-path: cli/go.sum
 
     - name: Lint Go files

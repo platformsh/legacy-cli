@@ -231,11 +231,7 @@ abstract class DomainCommandBase extends CommandBase
      */
     protected function supportsNonProductionDomains(Project $project): bool
     {
-        static $cache = [];
-        if (!isset($cache[$project->id])) {
-            $capabilities = $project->getCapabilities();
-            $cache[$project->id] = !empty($capabilities->custom_domains['enabled']);
-        }
-        return $cache[$project->id];
+        $capabilities = $this->api->getProjectCapabilities($project);
+        return !empty($capabilities->custom_domains['enabled']);
     }
 }

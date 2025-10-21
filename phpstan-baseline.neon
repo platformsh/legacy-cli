@@ -61,6 +61,11 @@ parameters:
 			path: src/Command/Integration/IntegrationCommandBase.php
 
 		-
+			message: "#^Method Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase\\:\\:selectedProjectIntegrationCapabilities\\(\\) should return array\\{enabled\\: bool, config\\?\\: array\\<string, array\\{enabled\\: bool\\}\\>\\} but returns array\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
 			message: "#^Cannot call method set\\(\\) on Platformsh\\\\ConsoleForm\\\\Field\\\\Field\\|false\\.$#"
 			count: 1
 			path: src/Command/Organization/OrganizationCreateCommand.php

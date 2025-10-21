@@ -76,6 +76,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config->getStr('application.executable')),
             '',
             'If the same service and resource is specified on the command line multiple times, only the final value will be used.',
+            '',
+            sprintf('You can also configure autoscaling by running <info>%s autoscaling:set</info>', $this->config->getStr('application.executable')),
         ];
         if ($this->config->has('service.resources_help_url')) {
             $helpLines[] = '';
@@ -122,11 +124,20 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $instanceLimit = $projectInfo['capabilities']['instance_limit'];
         }
 
+        $autoscalingEnabled = [];
+        // Check autoscaling settings for the environment, as autoscaling prevents changing some resources manually.
+        $autoscalingSettings = $this->api->getAutoscalingSettings($environment);
+        if ($autoscalingSettings) {
+            foreach ($autoscalingSettings->getData()['services'] as $service => $serviceSettings) {
+                $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+            }
+        }
+
         // Validate the --size option.
         [$givenSizes, $errored] = $this->parseSetting($input, 'size', $services, fn($v, $serviceName, $service) => $this->validateProfileSize($v, $serviceName, $service, $nextDeployment));
 
         // Validate the --count option.
-        [$givenCounts, $countErrored] = $this->parseSetting($input, 'count', $services, fn($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit));
+        [$givenCounts, $countErrored] = $this->parseSetting($input, 'count', $services, fn($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit, !empty($autoscalingEnabled[$serviceName])));
         $errored = $errored || $countErrored;
 
         // Validate the --disk option.
@@ -146,6 +157,16 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $containerProfiles = $nextDeployment->container_profiles;
 
+        // Remove guaranteed profiles if project does not support it.
+        $supportsGuaranteedCPU = $this->api->supportsGuaranteedCPU($selection->getProject(), $nextDeployment);
+        foreach ($containerProfiles as $profileName => $profile) {
+            foreach ($profile as $sizeName => $sizeInfo) {
+                if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] === 'guaranteed') {
+                    unset($containerProfiles[$profileName][$sizeName]);
+                }
+            }
+        }
+
         // Ask all questions if nothing was specified on the command line.
         $showCompleteForm = $input->isInteractive()
             && $input->getOption('size') === []
@@ -154,6 +175,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $updates = [];
         $current = [];
+        $hasGuaranteedCPU = false;
         foreach ($services as $name => $service) {
             $type = $this->typeName($service);
             $group = $this->group($service);
@@ -201,13 +223,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
                       || (isset($properties['resources']['minimum']['memory']) && $sizeInfo['memory'] < $properties['resources']['minimum']['memory'])) {
                         continue;
                     }
-                    $description = sprintf('CPU %s, memory %s MB', $sizeInfo['cpu'], $sizeInfo['memory']);
+                    $description = sprintf('CPU %s, memory %s MB (%s)', $sizeInfo['cpu'], $sizeInfo['memory'], $sizeInfo['cpu_type']);
                     if (isset($properties['resources']['profile_size'])
                         && $profileSize == $properties['resources']['profile_size']) {
                         $description .= ' <question>(current)</question>';
                     } elseif ($defaultOption !== null && $defaultOption === $profileSize) {
                         $description .= ' <question>(default)</question>';
                     }
+
                     $options[$profileSize] = $description;
                 }
 
@@ -225,8 +248,19 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 $errored = true;
             }
 
+            // Check if we have guaranteed CPU changes.
+            if (isset($updates[$group][$name]['resources']['profile_size'])) {
+                $serviceProfileSize = $updates[$group][$name]['resources']['profile_size'];
+                $serviceProfileType = $properties['container_profile'];
+                if (isset($containerProfiles[$serviceProfileType][$serviceProfileSize])
+                    && $containerProfiles[$serviceProfileType][$serviceProfileSize]['cpu_type'] === 'guaranteed') {
+                    $hasGuaranteedCPU = true;
+                }
+            }
+
             // Set the instance count.
-            if (!$service instanceof Service) { // a Service instance count cannot be changed
+            // This is not applicable to a Service, and unavailable when autoscaling is enabled.
+            if (!$service instanceof Service && empty($autoscalingEnabled[$name])) {
                 if (isset($givenCounts[$name])) {
                     $instanceCount = $givenCounts[$name];
                     if ($instanceCount !== $properties['instance_count'] && !($instanceCount === 1 && !isset($properties['instance_count']))) {
@@ -235,7 +269,12 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 } elseif ($showCompleteForm) {
                     $ensureHeader();
                     $default = $properties['instance_count'] ?: 1;
-                    $instanceCount = $this->questionHelper->askInput('Enter the number of instances', $default, [], fn($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit));
+                    $instanceCount = $this->questionHelper->askInput(
+                        'Enter the number of instances',
+                        $default,
+                        [],
+                        fn($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit, false)
+                    );
                     if ($instanceCount !== $properties['instance_count']) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
                     }
@@ -334,7 +373,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $this->stdErr->writeln('');
-        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
+
+        $questionText = 'Are you sure you want to continue?';
+        if ($hasGuaranteedCPU && $this->config->has('warnings.guaranteed_resources_msg')) {
+            $questionText = trim($this->config->getStr('warnings.guaranteed_resources_msg'))
+                . "\n\n" . "Are you sure you want to continue?";
+        }
+        if (!$this->questionHelper->confirm($questionText)) {
             return 1;
         }
 
@@ -385,10 +430,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
         if (isset($updates['resources']['profile_size'])) {
             $sizeInfo = $this->resourcesUtil->sizeInfo($properties, $containerProfiles);
             $newProperties = array_replace_recursive($properties, $updates);
+
             $newSizeInfo = $this->resourcesUtil->sizeInfo($newProperties, $containerProfiles);
             $this->stdErr->writeln('    CPU: ' . $this->resourcesUtil->formatChange(
-                $this->resourcesUtil->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
-                $this->resourcesUtil->formatCPU($newSizeInfo['cpu']),
+                $this->resourcesUtil->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null) . ' ' . $this->formatCPUType($sizeInfo),
+                $this->resourcesUtil->formatCPU($newSizeInfo['cpu']) . ' ' . $this->formatCPUType($newSizeInfo)
             ));
             $this->stdErr->writeln('    Memory: ' . $this->resourcesUtil->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,
@@ -444,10 +490,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
      *
      * @throws InvalidArgumentException
      */
-    protected function validateInstanceCount(string $value, string $serviceName, WebApp|Worker|Service $service, ?int $limit): int
+    protected function validateInstanceCount(string $value, string $serviceName, WebApp|Worker|Service $service, ?int $limit, bool $autoscalingEnabled): int
     {
         if ($service instanceof Service) {
             throw new InvalidArgumentException(sprintf('The instance count of the service <error>%s</error> cannot be changed.', $serviceName));
+        }
+        if ($autoscalingEnabled) {
+            throw new InvalidArgumentException(sprintf('The instance count of the %s <error>%s</error> cannot be changed when autoscaling is enabled.', $this->typeName($service), $serviceName));
         }
         $count = (int) $value;
         if ($count != $value || $value <= 0) {

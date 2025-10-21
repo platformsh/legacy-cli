@@ -67,7 +67,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 . "\n" . ArrayArgument::SPLIT_HELP
                 . "\nThe % or * characters can be used as a wildcard to exclude types.",
             )
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', self::DEFAULT_LIST_LIMIT)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
@@ -132,7 +132,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
 
-            $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
+            $max = $input->getOption('limit') ? (int) $input->getOption('limit') : self::DEFAULT_LIST_LIMIT;
             $maybeMoreAvailable = count($activities) === $max;
             if ($maybeMoreAvailable) {
                 $this->stdErr->writeln('');

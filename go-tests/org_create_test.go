@@ -18,7 +18,7 @@ func TestOrgCreate(t *testing.T) {
 	apiHandler := mockapi.NewHandler(t)
 	apiHandler.SetMyUser(&mockapi.User{ID: myUserID})
 	apiHandler.SetOrgs([]*mockapi.Org{
-		makeOrg("org-id-1", "acme", "ACME Inc.", myUserID),
+		makeOrg("org-id-1", "acme", "ACME Inc.", myUserID, "flexible"),
 	})
 
 	apiServer := httptest.NewServer(apiHandler)
@@ -30,11 +30,11 @@ func TestOrgCreate(t *testing.T) {
 	f.Run("cc")
 
 	assertTrimmed(t, `
-+------+-----------+--------------------------------------+
-| Name | Label     | Owner email                          |
-+------+-----------+--------------------------------------+
-| acme | ACME Inc. | user-for-org-create-test@example.com |
-+------+-----------+--------------------------------------+
++------+-----------+----------+--------------------------------------+
+| Name | Label     | Type     | Owner email                          |
++------+-----------+----------+--------------------------------------+
+| acme | ACME Inc. | flexible | user-for-org-create-test@example.com |
++------+-----------+----------+--------------------------------------+
 `, f.Run("orgs"))
 
 	_, stdErr, err := f.RunCombinedOutput("org:create", "--name", "hooli", "--yes")
@@ -50,11 +50,11 @@ func TestOrgCreate(t *testing.T) {
 	assert.Contains(t, stdErr, "Hooli")
 
 	assertTrimmed(t, `
-+-------+-----------+--------------------------------------+
-| Name  | Label     | Owner email                          |
-+-------+-----------+--------------------------------------+
-| acme  | ACME Inc. | user-for-org-create-test@example.com |
-| hooli | Hooli     | user-for-org-create-test@example.com |
-+-------+-----------+--------------------------------------+
++-------+-----------+----------+--------------------------------------+
+| Name  | Label     | Type     | Owner email                          |
++-------+-----------+----------+--------------------------------------+
+| acme  | ACME Inc. | flexible | user-for-org-create-test@example.com |
+| hooli | Hooli     | flexible | user-for-org-create-test@example.com |
++-------+-----------+----------+--------------------------------------+
 `, f.Run("orgs"))
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -23,7 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:info', description: 'Read or set properties for an environment')]
 class EnvironmentInfoCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -93,6 +94,10 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->propertyFormatter->format($value, $key);
         }
+
+        $headings[] = 'deployment_type';
+        $values[] = $environment->getSettings()->enable_manual_deployments ? 'manual' : 'automatic';
+
         $this->table->renderSimple($values, $headings);
 
         return 0;
@@ -183,6 +188,14 @@ class EnvironmentInfoCommand extends CommandBase
 
     protected function validateValue(string $property, string $value, Environment $environment, Project $project): bool
     {
+        if ($property == 'deployment_type') {
+            $this->stdErr->writeln(
+                'Set the deployment type with: <comment>' . $this->config->getStr('application.executable')
+                . ' environment:deploy:type</comment>',
+            );
+            return false;
+        }
+
         $type = $this->getType($property);
         if (!$type) {
             $this->stdErr->writeln("Property not writable: <error>$property</error>");

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Client\Model\Deployment\Service;
+use Platformsh\Client\Model\Deployment\WebApp;
+use Platformsh\Client\Model\Deployment\Worker;
+use Platformsh\Client\Model\Project\Capabilities;
 use GuzzleHttp\HandlerStack;
 use Symfony\Component\Filesystem\Filesystem;
 use GuzzleHttp\Exception\RequestException;
@@ -30,6 +34,7 @@ use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\AutoscalingSettings;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
@@ -625,7 +630,17 @@ class Api
      */
     private function matchesVendorFilter(string|array|null $filters, BasicProjectInfo $project): bool
     {
-        return empty($filters) || in_array($project->vendor, (array) $filters);
+        if (empty($filters)) {
+            return true;
+        }
+        if (in_array($project->vendor, (array) $filters)) {
+            return true;
+        }
+        // Show projects with the "upsun" vendor under the "platformsh" filter.
+        if ($project->vendor === 'upsun' && in_array('platformsh', (array) $filters)) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -1368,7 +1383,10 @@ class Api
 
         // Fall back to the public-url property.
         if ($environment->hasLink('public-url')) {
-            return $environment->getLink('public-url');
+            $data = $environment->getData();
+            if (!empty($data['_links']['public-url']['href'])) {
+                return $data['_links']['public-url']['href'];
+            }
         }
 
         return null;
@@ -1397,39 +1415,19 @@ class Api
      *
      * @param string $id
      * @param Project|null $project
-     * @param bool $forWrite
      *
      * @throws RequestException
      *
      * @return false|Subscription
      *   The subscription or false if not found.
      */
-    public function loadSubscription(string $id, ?Project $project = null, bool $forWrite = true): Subscription|false
+    public function loadSubscription(string $id, ?Project $project = null): Subscription|false
     {
         $organizations_enabled = $this->config->getBool('api.organizations');
         if (!$organizations_enabled) {
             // Always load the subscription directly if the Organizations API
             // is not enabled.
             return $this->getClient()->getSubscription($id);
-        }
-
-        // Attempt to load the subscription directly.
-        // This is possible if the user is on the project's access list, or
-        // if the user has access to all subscriptions.
-        // However, while this legacy API works for reading, it won't always work for writing.
-        if (!$forWrite) {
-            try {
-                $subscription = $this->getClient()->getSubscription($id);
-            } catch (BadResponseException $e) {
-                if ($e->getResponse()->getStatusCode() !== 403) {
-                    throw $e;
-                }
-                $subscription = false;
-            }
-            if ($subscription) {
-                $this->io->debug('Loaded the subscription directly');
-                return $subscription;
-            }
         }
 
         // Use the project's organization, if known.
@@ -1635,16 +1633,62 @@ class Api
         if (isset($deployment->project_info['settings'])) {
             return !empty($deployment->project_info['settings']['sizing_api_enabled']);
         }
+        $settings = $this->getProjectSettings($project);
+        return !empty($settings['sizing_api_enabled']);
+    }
+
+    /**
+     * Checks if a project supports the Autoscaling API.
+     */
+    public function supportsAutoscaling(Project $project): bool
+    {
+        $capabilities = $this->getProjectCapabilities($project);
+        return !empty($capabilities->autoscaling['enabled']);
+    }
+
+    /**
+     * Returns project settings.
+     *
+     * Settings are cached between calls unless a refresh is forced.
+     *
+     * @param bool $refresh
+     *
+     * @return array<string, mixed>
+     */
+    public function getProjectSettings(Project $project, bool $refresh = false): array
+    {
         $cacheKey = 'project-settings:' . $project->id;
         $cachedSettings = $this->cache->fetch($cacheKey);
-        if (!empty($cachedSettings['sizing_api_enabled'])) {
-            return true;
+        if (!empty($cachedSettings) && !$refresh) {
+            return $cachedSettings;
         }
         $request = new Request('GET', $project->getUri() . '/settings');
         $response = $this->getHttpClient()->send($request);
         $settings = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $this->cache->save($cacheKey, $settings, $this->config->getInt('api.projects_ttl'));
-        return !empty($settings['sizing_api_enabled']);
+        return $settings;
+    }
+
+    /**
+     * Returns project capabilities.
+     *
+     * Capabilities are cached between calls unless a refresh is forced.
+     *
+     * @param bool $refresh
+     *
+     * @return Capabilities
+     */
+    public function getProjectCapabilities(Project $project, bool $refresh = false): Capabilities
+    {
+        $cacheKey = 'project-capabilities:' . $project->id;
+        $cachedCapabilities = $this->cache->fetch($cacheKey);
+        if (!empty($cachedCapabilities) && !$refresh) {
+            return $cachedCapabilities;
+        }
+
+        $capabilities = $project->getCapabilities();
+        $this->cache->save($cacheKey, $capabilities, $this->config->getInt('api.projects_ttl'));
+        return $capabilities;
     }
 
     /**
@@ -1697,6 +1741,83 @@ class Api
     }
 
     /**
+     * Returns the URL to view autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     * @param bool $manage
+     *
+     * @return string|false
+     *   The url to the autoscaling settings endpoint or false on failure.
+     */
+    public function getAutoscalingSettingsLink(Environment $environment, bool $manage = false): string|false
+    {
+        $rel = "#autoscaling";
+        if ($manage === true) {
+            $rel = "#manage-autoscaling";
+        }
+
+        if (!$environment->hasLink($rel)) {
+            $this->io->debug(\sprintf(
+                'The environment <comment>%s</comment> is missing the link <comment>%s</comment>',
+                $environment->id,
+                $rel
+            ));
+
+            return false;
+        }
+
+        return $environment->getLink($rel);
+    }
+
+    /**
+     * Returns the autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     *
+     * @return \Platformsh\Client\Model\AutoscalingSettings|false
+     *  The autoscaling settings for the environment or false on failure.
+     */
+    public function getAutoscalingSettings(Environment $environment)
+    {
+        $autoscalingSettingsLink = $this->getAutoscalingSettingsLink($environment);
+        if (!$autoscalingSettingsLink) {
+            return false;
+        }
+
+        try {
+            $result = $environment->runOperation('autoscaling', 'get');
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            return false;
+        }
+        return new AutoscalingSettings($result->getData(), $autoscalingSettingsLink);
+    }
+
+    /**
+     * Configures the autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     * @param array<string, mixed> $settings
+     */
+    public function setAutoscalingSettings(Environment $environment, array $settings): void
+    {
+        if (!$this->getAutoscalingSettingsLink($environment, true)) {
+            throw new EnvironmentStateException('Managing autoscaling settings is not currently available', $environment);
+        }
+
+        try {
+            $environment->runOperation('manage-autoscaling', 'patch', $settings);
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Warn the user if a project is suspended.
      *
      * @param Project $project
@@ -1733,5 +1854,65 @@ class Api
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
             'To redeploy an environment, run: <info>' . $this->config->getStr('application.executable') . ' redeploy</info>',
         ]);
+    }
+
+    /**
+     * Lists services in a deployment.
+     *
+     * @param EnvironmentDeployment $deployment
+     *
+     * @return array<string, WebApp|Worker|Service>
+     *     An array of services keyed by the service name.
+     */
+    private function allServices(EnvironmentDeployment $deployment): array
+    {
+        $webapps = $deployment->webapps;
+        $workers = $deployment->workers;
+        $services = $deployment->services;
+        ksort($webapps, SORT_STRING | SORT_FLAG_CASE);
+        ksort($workers, SORT_STRING | SORT_FLAG_CASE);
+        ksort($services, SORT_STRING | SORT_FLAG_CASE);
+        return array_merge($webapps, $workers, $services);
+    }
+
+    /**
+     * Checks if a project supports guaranteed resources.
+     */
+    public function supportsGuaranteedCPU(Project $project, ?EnvironmentDeployment $deployment = null): bool
+    {
+        if ($deployment && ($info = $deployment->getProperty('project_info', false))) {
+            $settings = $info['settings'];
+            $capabilities = $info['capabilities'];
+        } else {
+            $settings = $this->getProjectSettings($project);
+            $capabilities = $this->getProjectCapabilities($project);
+        }
+
+        return !empty($settings['enable_guaranteed_resources']) && !empty($capabilities['guaranteed_resources']['enabled']);
+    }
+
+    /**
+     * Check if an environment has guaranteed CPU.
+     */
+    public function environmentHasGuaranteedCPU(Environment $environment, ?Project $project = null): bool
+    {
+        if (!$this->supportsGuaranteedCPU($project)) {
+            return false;
+        }
+
+        $deployment = $this->getCurrentDeployment($environment);
+        $containerProfiles = $deployment->container_profiles;
+        $services = $this->allServices($deployment);
+        foreach ($services as $service) {
+            $properties = $service->getProperties();
+            if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {
+                $profileInfo = $containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']];
+                if (isset($profileInfo['cpu_type']) && $profileInfo['cpu_type'] === 'guaranteed') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

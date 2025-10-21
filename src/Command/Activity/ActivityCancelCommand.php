@@ -77,7 +77,7 @@ class ActivityCancelCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 /** @var Activity $activity */
-                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, self::DEFAULT_FIND_LIMIT, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
             }
         } else {
             $activities = $this->activityLoader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
