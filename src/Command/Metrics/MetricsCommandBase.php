@@ -247,7 +247,13 @@ abstract class MetricsCommandBase extends CommandBase
         $servicesInput = ArrayArgument::getOption($input, 'service');
         $selectedServiceNames = [];
         if (!empty($servicesInput)) {
-            $selectedServiceNames = Wildcard::select(array_merge(array_keys($allServices), ['router']), $servicesInput);
+            // Build a list of selectable service names, including internal storage services.
+            $selectableServiceNames = array_merge(array_keys($allServices), ['router']);
+            // Add internal storage services for each webapp.
+            foreach (array_keys($deployment->webapps) as $appName) {
+                $selectableServiceNames[] = $appName . '---internal---storage';
+            }
+            $selectedServiceNames = Wildcard::select($selectableServiceNames, $servicesInput);
             if (!$selectedServiceNames) {
                 $this->stdErr->writeln('No services were found matching the name(s): <error>' . implode(', ', $servicesInput) . '</error>');
                 return false;
