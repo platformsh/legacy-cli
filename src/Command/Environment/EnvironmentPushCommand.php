@@ -143,7 +143,7 @@ class EnvironmentPushCommand extends CommandBase
 
         $strategy = $input->getOption('deploy-strategy');
         if ($strategy !== null && $strategy !== 'rolling' && $strategy !== 'stopstart') {
-            $this->stdErr->writeln("Invalid deploy strategy <error>$strategy</error>, should be 'rolling' or 'stopstart'.");
+            $this->stdErr->writeln(sprintf('Invalid deploy strategy <error>%s</error>, should be "rolling" or "stopstart"', $strategy));
             return 1;
         }
 
@@ -182,18 +182,13 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        $this->stdErr->writeln('');
-
-        if ($strategy !== null) {
-            # If Automatic deployments enabled on the env
-            if (!$targetEnvironment->operationAvailable('deploy', true)) {
-                if ($strategy === 'rolling') {
-                    $this->stdErr->writeln('The deployment will not cause downtime as "rolling" strategy was specified.');
-                }
-            } else {
-                $this->stdErr->writeln('The activity will be staged, ignoring the deployment strategy.');
-            }
+        if (!$targetEnvironment->operationAvailable('deploy', true)) {
+            $this->stdErr->writeln(sprintf('Deployment strategy: <info>%s</info>', $strategy ?: "stopstart"));
+        } else {
+            $this->stdErr->writeln('The activity will be staged, ignoring the deployment strategy.');
         }
+
+        $this->stdErr->writeln('');
 
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
