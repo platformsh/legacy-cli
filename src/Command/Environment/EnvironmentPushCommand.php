@@ -30,7 +30,8 @@ class EnvironmentPushCommand extends CommandBase
             ->addHiddenOption('branch', null, InputOption::VALUE_NONE, 'DEPRECATED: alias of --activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
-            ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
+            ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)")
+            ->addOption('deploy-strategy', 's', InputOption::VALUE_REQUIRED, 'Set the deployment strategy, rolling or stopstart (default)');
         $this->addResourcesInitOption(
             ['parent', 'default', 'minimum', 'manual'],
             'Set the resources to use for new services: parent, default, minimum, or manual.'
@@ -140,6 +141,12 @@ class EnvironmentPushCommand extends CommandBase
         $parentId = $input->getOption('parent');
         $type = $input->getOption('type');
 
+        $strategy = $input->getOption('deploy-strategy');
+        if ($strategy !== null && $strategy !== 'rolling' && $strategy !== 'stopstart') {
+            $this->stdErr->writeln("Invalid deploy strategy <error>$strategy</error>, should be 'rolling' or 'stopstart'.");
+            return 1;
+        }
+
         // Check if the environment may be a production one.
         $mayBeProduction = $type === 'production'
             || ($targetEnvironment && $targetEnvironment->type === 'production')
@@ -176,6 +183,17 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         $this->stdErr->writeln('');
+
+        if ($strategy !== null) {
+            # If Automatic deployments enabled on the env
+            if (!$targetEnvironment->operationAvailable('deploy', true)) {
+                if ($strategy === 'rolling') {
+                    $this->stdErr->writeln('The deployment will not cause downtime as "rolling" strategy was specified.');
+                }
+            } else {
+                $this->stdErr->writeln('The activity will be staged, ignoring the deployment strategy.');
+            }
+        }
 
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
@@ -237,6 +255,9 @@ class EnvironmentPushCommand extends CommandBase
             }
             if ($resourcesInit !== null) {
                 $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
+            }
+            if ($strategy !== null) {
+                $gitArgs[] = '--push-option=deploy.strategy=' . $strategy;
             }
 
             // Build the SSH command to use with Git.
