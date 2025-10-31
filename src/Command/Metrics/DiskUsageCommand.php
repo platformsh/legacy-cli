@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Metrics;
 
-use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Model\Metrics\Aggregation;
+use Platformsh\Cli\Model\Metrics\Field;
+use Platformsh\Cli\Model\Metrics\Format;
+use Platformsh\Cli\Model\Metrics\MetricKind;
+use Platformsh\Cli\Model\Metrics\SourceField;
+use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
 use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
-use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DiskUsageCommand extends MetricsCommandBase
 {
     /** @var array<string, string> */
-    private array $tableHeader = [
+    private const TABLE_HEADER = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -41,9 +45,12 @@ class DiskUsageCommand extends MetricsCommandBase
     /** @var string[] */
     private array $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
 
-    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
-    {
-        parent::__construct();
+    public function __construct(
+        private readonly PropertyFormatter $propertyFormatter,
+        Selector $selector,
+        Table $table
+    ) {
+        parent::__construct($selector, $table);
     }
 
     protected function configure(): void
@@ -54,68 +61,99 @@ class DiskUsageCommand extends MetricsCommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addCompleter($this->selector);
-        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
+        Table::configureInput($this->getDefinition(), self::TABLE_HEADER, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $timeSpec = $this->validateTimeInput($input);
-        if ($timeSpec === false) {
-            return 1;
-        }
-
         if ($input->getOption('tmp')) {
             $input->setOption('columns', $this->tmpReportColumns);
         }
         $this->table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
-        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
-
-        if (!$this->table->formatIsMachineReadable()) {
-            $this->selector->ensurePrintedSelection($selection);
-        }
-
-        $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
-        if ($values === false) {
-            return 1;
-        }
+        [$values, $environment] = $this->processQuery($input, [MetricKind::API_TYPE_DISK, MetricKind::API_TYPE_INODES], [MetricKind::API_AGG_AVG]);
 
         $bytes = $input->getOption('bytes');
 
         $rows = $this->buildRows($values, [
-            'used' => new Field('disk_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'limit' => new Field('disk_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'percent' => new Field('disk_percent', Field::FORMAT_PERCENT),
+            'used' => new Field(
+                $bytes ? Format::Rounded : Format::Disk,
+                new SourceField(MetricKind::DiskUsed, Aggregation::Avg, '/mnt'),
+            ),
+            'limit' => new Field(
+                $bytes ? Format::Rounded : Format::Disk,
+                new SourceField(MetricKind::DiskLimit, Aggregation::Max, '/mnt'),
+            ),
+            'percent' => new Field(
+                Format::Percent,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::DiskUsed, Aggregation::Avg, '/mnt'),
+                    new SourceField(MetricKind::DiskLimit, Aggregation::Max, '/mnt')
+                ),
+            ),
 
-            'iused' => new Field('inodes_used', FIELD::FORMAT_ROUNDED),
-            'ilimit' => new Field('inodes_limit', FIELD::FORMAT_ROUNDED),
-            'ipercent' => new Field('inodes_percent', Field::FORMAT_PERCENT),
+            'iused' => new Field(
+                Format::Rounded,
+                new SourceField(MetricKind::InodesUsed, Aggregation::Avg, '/mnt'),
+            ),
+            'ilimit' => new Field(
+                Format::Rounded,
+                new SourceField(MetricKind::InodesLimit, Aggregation::Max, '/mnt'),
+            ),
+            'ipercent' => new Field(
+                Format::Percent,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::InodesUsed, Aggregation::Avg, '/mnt'),
+                    new SourceField(MetricKind::InodesLimit, Aggregation::Max, '/mnt')
+                ),
+            ),
 
-            'tmp_used' => new Field('tmp_disk_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'tmp_limit' => new Field('tmp_disk_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'tmp_percent' => new Field('tmp_disk_percent', Field::FORMAT_PERCENT),
+            'tmp_used' => new Field(
+                $bytes ? Format::Rounded : Format::Disk,
+                new SourceField(MetricKind::DiskUsed, Aggregation::Avg, '/tmp'),
+            ),
+            'tmp_limit' => new Field(
+                $bytes ? Format::Rounded : Format::Disk,
+                new SourceField(MetricKind::DiskLimit, Aggregation::Max, '/tmp'),
+            ),
+            'tmp_percent' => new Field(
+                Format::Percent,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::DiskUsed, Aggregation::Avg, '/tmp'),
+                    new SourceField(MetricKind::DiskLimit, Aggregation::Max, '/tmp')
+                ),
+            ),
 
-            'tmp_iused' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
-            'tmp_ilimit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
-            'tmp_ipercent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
-        ], $selection->getEnvironment());
+            'tmp_iused' => new Field(
+                Format::Rounded,
+                new SourceField(MetricKind::InodesUsed, Aggregation::Avg, '/tmp'),
+            ),
+            'tmp_ilimit' => new Field(
+                Format::Rounded,
+                new SourceField(MetricKind::InodesLimit, Aggregation::Max, '/tmp'),
+            ),
+            'tmp_ipercent' => new Field(
+                Format::Percent,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::InodesUsed, Aggregation::Avg, '/tmp'),
+                    new SourceField(MetricKind::InodesLimit, Aggregation::Max, '/tmp')
+                ),
+            ),
+        ], $environment);
 
         if (!$this->table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime()),
+                (new Duration())->humanize($values['_grain']),
+                $formatter->formatDate($values['_from']),
+                $formatter->formatDate($values['_to']),
             ));
         }
 
-        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, self::TABLE_HEADER, $this->defaultColumns);
 
         return 0;
     }
