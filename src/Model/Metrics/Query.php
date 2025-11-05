@@ -7,130 +7,100 @@ namespace Platformsh\Cli\Model\Metrics;
  */
 class Query
 {
-    /** @var int Interval in seconds */
-    private $interval;
-    /** @var int Start timestamp */
+    /** @var array|null */
+    private $services = null;
+    /** @var array */
+    private $types = array();
+    /** @var array */
+    private $aggs = array();
+    /** @var int */
     private $startTime;
-    /** @var int End timestamp */
+    /** @var int */
     private $endTime;
-    /** @var string */
-    private $collection;
-    /** @var array */
-    private $fields = [];
-    /** @var array */
-    private $filters = [];
-
-    /**
-     * @param int $interval
-     * @return Query
-     */
-    public function setInterval($interval)
-    {
-        $this->interval = $interval;
-        return $this;
-    }
 
     /**
      * @param int $startTime
-     * @return Query
+     * @param int $endTime
      */
-    public function setStartTime($startTime)
+    public function __construct($startTime, $endTime)
     {
         $this->startTime = $startTime;
-        return $this;
-    }
-
-    /**
-     * @param int $endTime
-     * @return Query
-     */
-    public function setEndTime($endTime)
-    {
         $this->endTime = $endTime;
-        return $this;
     }
 
     /**
-     * @param string $collection
-     * @return Query
+     * @param TimeSpec $timeSpec
+     * @return self
      */
-    public function setCollection($collection)
+    public static function fromTimeSpec($timeSpec)
     {
-        $this->collection = $collection;
-        return $this;
+        return new self($timeSpec->getStartTime(), $timeSpec->getEndTime());
     }
 
     /**
-     * @param string $name
-     * @param string $expression
-     * @return Query
+     * @param array|null $services
+     * @return self
      */
-    public function addField($name, $expression)
+    public function setServices($services)
     {
-        $this->fields[$name] = $expression;
+        $this->services = $services;
+
         return $this;
     }
 
     /**
-     * @param string $key
-     * @param string $value
-     * @return Query
+     * @param array $types
+     * @return self
      */
-    public function addFilter($key, $value)
+    public function setTypes($types)
     {
-        $this->filters[$key] = $value;
+        $this->types = $types;
+
         return $this;
     }
 
     /**
-     * Returns the query as an array.
+     * @param array $aggs
+     * @return self
+     */
+    public function setAggs($aggs)
+    {
+        $this->aggs = $aggs;
+
+        return $this;
+    }
+
+    /**
      * @return array
      */
     public function asArray()
     {
-        $query = [
-            'stream' => [
-                'stream' => 'metrics',
-                'collection' => $this->collection,
-            ],
-            'interval' => $this->interval . 's',
-            'fields' => [],
-            'range' => [
-                'from' => date('Y-m-d\TH:i:s.uP', $this->startTime),
-                'to' => date('Y-m-d\TH:i:s.uP', $this->endTime),
-            ],
-        ];
-        foreach ($this->fields as $name => $expr) {
-            $query['fields'][] = ['name' => $name, 'expr' => $expr];
+        $query = array(
+            'from' => $this->startTime,
+            'to' => $this->endTime,
+        );
+
+        if (!empty($this->services)) {
+            $query['services_mode'] = '1';
+            $query['services'] = $this->services;
         }
-        foreach ($this->filters as $key => $value) {
-            $query['filters'][] = ['key' => $key, 'value' => $value];
+
+        if (!empty($this->types)) {
+            $query['types'] = $this->types;
         }
+
+        if (!empty($this->aggs)) {
+            $query['aggs'] = $this->aggs;
+        }
+
         return $query;
     }
 
     /**
-     * @return int
+     * @return string
      */
-    public function getStartTime()
+    public function asString()
     {
-        return $this->startTime;
+        return '?' . http_build_query($this->asArray(), '', '&', PHP_QUERY_RFC3986);
     }
-
-    /**
-     * @return int
-     */
-    public function getEndTime()
-    {
-        return $this->endTime;
-    }
-
-    /**
-     * @return int
-     */
-    public function getInterval()
-    {
-        return $this->interval;
-    }
-
 }

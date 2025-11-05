@@ -1,8 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
-use Khill\Duration\Duration;
+use Platformsh\Cli\Model\Metrics\Aggregation;
 use Platformsh\Cli\Model\Metrics\Field;
+use Platformsh\Cli\Model\Metrics\Format;
+use Platformsh\Cli\Model\Metrics\MetricKind;
+use Platformsh\Cli\Model\Metrics\SourceField;
+use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
+use Platformsh\Cli\Selector\Selector;
+use Khill\Duration\Duration;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,16 +17,41 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MemCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    /**
+     * @var array
+     */
+    private static $tableHeader = array(
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
         'used' => 'Used',
         'limit' => 'Limit',
         'percent' => 'Used %',
-    ];
+    );
 
-    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
+    /**
+     * @var array
+     */
+    private $defaultColumns = array('timestamp', 'service', 'used', 'limit', 'percent');
+
+    /**
+     * @var PropertyFormatter
+     */
+    private $propertyFormatter;
+
+    /**
+     * @param PropertyFormatter $propertyFormatter
+     * @param Selector $selector
+     * @param Table $table
+     */
+    public function __construct(
+        PropertyFormatter $propertyFormatter,
+        Selector $selector,
+        Table $table
+    ) {
+        $this->propertyFormatter = $propertyFormatter;
+        parent::__construct($selector, $table);
+    }
 
     /**
      * {@inheritdoc}
@@ -28,62 +59,64 @@ class MemCommand extends MetricsCommandBase
     protected function configure()
     {
         $this->setName('metrics:memory')
-            ->setAliases(['mem', 'memory'])
+            ->setAliases(array('mem', 'memory'))
             ->setDescription('Show memory usage of an environment')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
-        $this->addMetricsOptions()
-            ->addProjectOption()
-            ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
+        $this->addMetricsOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        Table::configureInput($this->getDefinition(), self::$tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
     /**
-     * {@inheritdoc}
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $timeSpec = $this->validateTimeInput($input);
-        if ($timeSpec === false) {
-            return 1;
-        }
+        $result = $this->processQuery($input, array(MetricKind::API_TYPE_MEMORY), array(MetricKind::API_AGG_AVG));
 
-        $this->validateInput($input, false, true);
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
-        if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
-        }
-
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
-        if ($values === false) {
-            return 1;
-        }
+        $values = $result[0];
+        $environment = $result[1];
 
         $bytes = $input->getOption('bytes');
 
-        $rows = $this->buildRows($values, [
-            'used' => new Field('mem_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
-            'limit' => new Field('mem_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
-            'percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
-        ]);
+        $rows = $this->buildRows($values, array(
+            'used' => new Field(
+                $bytes ? Format::ROUNDED : Format::MEMORY,
+                new SourceField(MetricKind::MEMORY_USED, Aggregation::AVG)
+            ),
+            'limit' => new Field(
+                $bytes ? Format::ROUNDED : Format::MEMORY,
+                new SourceField(MetricKind::MEMORY_LIMIT, Aggregation::MAX)
+            ),
+            'percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::MEMORY_USED, Aggregation::AVG),
+                    new SourceField(MetricKind::MEMORY_LIMIT, Aggregation::MAX)
+                ),
+                false
+            ),
+        ), $environment);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
                 'Average memory usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime())
+                (new Duration())->humanize($values['_grain']),
+                $formatter->formatDate($values['_from']),
+                $formatter->formatDate($values['_to'])
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, self::$tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->explainHighMemoryServices();
         }
 
