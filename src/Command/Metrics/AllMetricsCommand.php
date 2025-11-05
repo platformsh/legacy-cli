@@ -7,8 +7,6 @@ use Platformsh\Cli\Model\Metrics\Format;
 use Platformsh\Cli\Model\Metrics\MetricKind;
 use Platformsh\Cli\Model\Metrics\SourceField;
 use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
-use Platformsh\Cli\Selector\SelectorConfig;
-use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -67,24 +65,6 @@ class AllMetricsCommand extends MetricsCommandBase
         'tmp_inodes_percent',
     );
 
-    /**
-     * @var PropertyFormatter
-     */
-    private $propertyFormatter;
-
-    /**
-     * @param PropertyFormatter $propertyFormatter
-     * @param Selector $selector
-     * @param Table $table
-     */
-    public function __construct(
-        PropertyFormatter $propertyFormatter,
-        Selector $selector,
-        Table $table
-    ) {
-        $this->propertyFormatter = $propertyFormatter;
-        parent::__construct($selector, $table);
-    }
 
     /**
      * {@inheritdoc}
@@ -98,20 +78,9 @@ class AllMetricsCommand extends MetricsCommandBase
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
         $this->addExample('Show metrics over the last hour', ' -r 1h');
         $this->addExample('Show metrics for all SQL services', '--type mariadb,%sql');
-        $this->addMetricsOptions();
-        $this->selector->addProjectOption($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition());
-        $this->addCompleter($this->selector);
+        $this->addMetricsOptions()->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), self::$tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-    }
-
-    /**
-     * @return callable|null
-     */
-    protected function getChooseEnvFilter()
-    {
-        return SelectorConfig::filterEnvsMaybeActive();
     }
 
     /**
@@ -232,7 +201,9 @@ class AllMetricsCommand extends MetricsCommandBase
             ),
         ), $environment);
 
-        if (!$this->table->formatIsMachineReadable()) {
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        if (!$table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
@@ -243,9 +214,9 @@ class AllMetricsCommand extends MetricsCommandBase
             ));
         }
 
-        $this->table->render($rows, self::$tableHeader, $this->defaultColumns);
+        $table->render($rows, self::$tableHeader, $this->defaultColumns);
 
-        if (!$this->table->formatIsMachineReadable()) {
+        if (!$table->formatIsMachineReadable()) {
             $this->explainHighMemoryServices();
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You can run the <info>cpu</info>, <info>disk</info> and <info>mem</info> commands for more detail.');

@@ -5,13 +5,10 @@ namespace Platformsh\Cli\Command\Metrics;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Model\Metrics\SourceField;
 use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
-use Platformsh\Cli\Selector\Selector;
-use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Table;
 use GuzzleHttp\Exception\BadResponseException;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Command\CommandBase;
@@ -37,42 +34,6 @@ abstract class MetricsCommandBase extends CommandBase
      * @var bool whether services have been identified that use high memory
      */
     private $foundHighMemoryServices = false;
-
-    /**
-     * @var Selector
-     */
-    protected $selector;
-
-    /**
-     * @var Table
-     */
-    protected $table;
-
-    /**
-     * @param Selector $selector
-     * @param Table $table
-     */
-    public function __construct(Selector $selector, Table $table)
-    {
-        $this->selector = $selector;
-        $this->table = $table;
-        parent::__construct();
-    }
-
-    /**
-     * @param Api $api
-     * @param Config $config
-     * @param Io $io
-     * @param PropertyFormatter $propertyFormatter
-     * @return void
-     */
-    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter)
-    {
-        $this->api = $api;
-        $this->config = $config;
-        $this->propertyFormatter = $propertyFormatter;
-        $this->io = $io;
-    }
 
     public function isEnabled()
     {
@@ -134,21 +95,14 @@ abstract class MetricsCommandBase extends CommandBase
     protected function processQuery(InputInterface $input, array $metricTypes, array $metricAggs)
     {
         // Common
+        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
+        $this->validateInput($input, false, true);
+        $environment = $this->getSelectedEnvironment();
+
+        // Common
         $timeSpec = $this->validateTimeInput($input);
         if (false === $timeSpec) {
             throw new \InvalidArgumentException('Invalid time input. Please check the --range, --to, and --interval options.');
-        }
-
-        // Common
-        $selectorConfig = new SelectorConfig();
-        $selectorConfig->selectDefaultEnv = true;
-        $selectorConfig->chooseEnvFilter = $this->getChooseEnvFilter();
-        $selection = $this->selector->getSelection($input, $selectorConfig);
-        $environment = $selection->getEnvironment();
-
-        // Common
-        if (!$this->table->formatIsMachineReadable()) {
-            $this->selector->ensurePrintedSelection($selection);
         }
 
         if (!$link = $this->getResourcesOverviewUrl($environment)) {
@@ -263,13 +217,6 @@ abstract class MetricsCommandBase extends CommandBase
         return $selectedServiceNames;
     }
 
-    /**
-     * @return callable|null
-     */
-    protected function getChooseEnvFilter()
-    {
-        return null;
-    }
 
     /**
      * Validates the interval and range input, and finds defaults.

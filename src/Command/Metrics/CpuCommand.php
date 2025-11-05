@@ -7,7 +7,6 @@ use Platformsh\Cli\Model\Metrics\Format;
 use Platformsh\Cli\Model\Metrics\MetricKind;
 use Platformsh\Cli\Model\Metrics\SourceField;
 use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
-use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -34,25 +33,6 @@ class CpuCommand extends MetricsCommandBase
     private $defaultColumns = array('timestamp', 'service', 'used', 'limit', 'percent');
 
     /**
-     * @var PropertyFormatter
-     */
-    private $propertyFormatter;
-
-    /**
-     * @param PropertyFormatter $propertyFormatter
-     * @param Selector $selector
-     * @param Table $table
-     */
-    public function __construct(
-        PropertyFormatter $propertyFormatter,
-        Selector $selector,
-        Table $table
-    ) {
-        $this->propertyFormatter = $propertyFormatter;
-        parent::__construct($selector, $table);
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function configure()
@@ -60,10 +40,7 @@ class CpuCommand extends MetricsCommandBase
         $this->setName('metrics:cpu')
             ->setAliases(array('cpu'))
             ->setDescription('Show CPU usage of an environment');
-        $this->addMetricsOptions();
-        $this->selector->addProjectOption($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition());
-        $this->addCompleter($this->selector);
+        $this->addMetricsOptions()->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), self::$tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -98,7 +75,9 @@ class CpuCommand extends MetricsCommandBase
             ),
         ), $environment);
 
-        if (!$this->table->formatIsMachineReadable()) {
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+        if (!$table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
@@ -109,7 +88,7 @@ class CpuCommand extends MetricsCommandBase
             ));
         }
 
-        $this->table->render($rows, self::$tableHeader, $this->defaultColumns);
+        $table->render($rows, self::$tableHeader, $this->defaultColumns);
 
         return 0;
     }
