@@ -109,7 +109,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 'type' => new AdaptiveTableCell($activity->type, ['wrap' => false]),
                 'progress' => $activity->getCompletionPercent() . '%',
                 'state' => ActivityMonitor::formatState($activity->state),
-                'result' => ActivityMonitor::formatResult($activity->result, !$this->table->formatIsMachineReadable()),
+                'result' => ActivityMonitor::formatResult($activity, !$this->table->formatIsMachineReadable()),
             ];
             $timings = $activity->getProperty('timings', false, false) ?: [];
             foreach ($timingTypes as $timingType) {
