@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Metrics;
 
 use Platformsh\Cli\Model\Metrics\Field;
+use Platformsh\Cli\Model\Metrics\Format;
 use Platformsh\Cli\Model\Metrics\SourceField;
 use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
 use Platformsh\Cli\Service\Io;
@@ -115,20 +116,20 @@ abstract class MetricsCommandBase extends CommandBase
 
         $selectedServiceNames = $this->getServices($input, $environment);
         if (!empty($selectedServiceNames)) {
-            $this->io->debug('Selected service(s): ' . implode(', ', $selectedServiceNames));
+            $this->debug('Selected service(s): ' . implode(', ', $selectedServiceNames));
             $query->setServices($selectedServiceNames);
         }
-        $this->io->debug('Selected type(s): ' . implode(', ', $metricTypes));
+        $this->debug('Selected type(s): ' . implode(', ', $metricTypes));
         $query->setTypes($metricTypes);
-        $this->io->debug('Selected agg(s): ' . implode(', ', $metricAggs));
+        $this->debug('Selected agg(s): ' . implode(', ', $metricAggs));
         $query->setAggs($metricAggs);
 
         if ($this->stdErr->isDebug()) {
-            $this->io->debug('Metrics query: ' . json_encode($query->asArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            $this->debug('Metrics query: ' . json_encode($query->asArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         }
 
         // Perform the metrics query.
-        $client = $this->api->getHttpClient();
+        $client = $this->api()->getHttpClient();
         $request = $client->createRequest('GET', $metricsQueryUrl . $query->asString());
 
         try {
@@ -183,7 +184,7 @@ abstract class MetricsCommandBase extends CommandBase
     private function getServices(InputInterface $input, Environment $environment)
     {
         // Select services based on the --service or --type options.
-        $deployment = $this->api->getCurrentDeployment($environment);
+        $deployment = $this->api()->getCurrentDeployment($environment);
         $allServices = array_merge($deployment->webapps, $deployment->services, $deployment->workers);
         $servicesInput = ArrayArgument::getOption($input, 'service');
         $selectedServiceNames = array();
@@ -230,7 +231,7 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function validateTimeInput(InputInterface $input)
     {
-        $this->io->warnAboutDeprecatedOptions(array('interval'));
+        $this->warnAboutDeprecatedOptions(['interval']);
 
         if ($to = $input->getOption('to')) {
             $endTime = \strtotime($to);
@@ -272,6 +273,8 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function buildRows(array $values, array $fieldMapping, Environment $environment)
     {
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
         $sortServices = $this->getSortedServices($environment);
         $serviceTypes = array();
 
@@ -290,7 +293,7 @@ abstract class MetricsCommandBase extends CommandBase
                 $rows[] = new TableSeparator();
             }
             $startCount = count($rows);
-            $formattedTimestamp = $this->propertyFormatter->formatDate($timestamp);
+            $formattedTimestamp = $formatter->formatDate($timestamp);
 
             uksort($byService, $sortServices);
             foreach ($byService as $service => $byDimension) {
@@ -301,10 +304,10 @@ abstract class MetricsCommandBase extends CommandBase
                 $row = array();
                 $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, array('wrap' => false));
                 $row['service'] = $service;
-                $row['type'] = $this->propertyFormatter->format($serviceTypes[$service], 'service_type');
+                $row['type'] = $formatter->format($serviceTypes[$service], 'service_type');
                 foreach ($fieldMapping as $field => $fieldDefinition) {
                     /* @var Field $fieldDefinition */
-                    $row[$field] = $fieldDefinition->format->format($this->getValueFromSource($byDimension, $fieldDefinition->value), $fieldDefinition->warn);
+                    $row[$field] = Format::format($fieldDefinition->format, $this->getValueFromSource($byDimension, $fieldDefinition->value), $fieldDefinition->warn);
                 }
                 $rows[] = $row;
             }
@@ -321,7 +324,7 @@ abstract class MetricsCommandBase extends CommandBase
      */
     private function getServiceType(Environment $environment, $service)
     {
-        $deployment = $this->api->getCurrentDeployment($environment);
+        $deployment = $this->api()->getCurrentDeployment($environment);
 
         if (isset($deployment->services[$service])) {
             $type = $deployment->services[$service]->type;
@@ -392,24 +395,24 @@ abstract class MetricsCommandBase extends CommandBase
             if (!isset($point['mountpoints'][$sourceField->mountpoint])) {
                 return null;
             }
-            if (!isset($point['mountpoints'][$sourceField->mountpoint][$sourceField->source->value])) {
-                throw new \RuntimeException(\sprintf('Source "%s" not found in the mountpoint "%s".', $sourceField->source->value, $sourceField->mountpoint));
+            if (!isset($point['mountpoints'][$sourceField->mountpoint][$sourceField->source])) {
+                throw new \RuntimeException(\sprintf('Source "%s" not found in the mountpoint "%s".', $sourceField->source, $sourceField->mountpoint));
             }
-            if (!isset($point['mountpoints'][$sourceField->mountpoint][$sourceField->source->value][$sourceField->aggregation->value])) {
-                throw new \RuntimeException(\sprintf('Aggregation "%s" not found for source "%s" in mountpoint "%s".', $sourceField->aggregation->value, $sourceField->source->value, $sourceField->mountpoint));
+            if (!isset($point['mountpoints'][$sourceField->mountpoint][$sourceField->source][$sourceField->aggregation])) {
+                throw new \RuntimeException(\sprintf('Aggregation "%s" not found for source "%s" in mountpoint "%s".', $sourceField->aggregation, $sourceField->source, $sourceField->mountpoint));
             }
 
-            return $point['mountpoints'][$sourceField->mountpoint][$sourceField->source->value][$sourceField->aggregation->value];
+            return $point['mountpoints'][$sourceField->mountpoint][$sourceField->source][$sourceField->aggregation];
         }
 
-        if (!isset($point[$sourceField->source->value])) {
-            throw new \RuntimeException(\sprintf('Source "%s" not found in the data point.', $sourceField->source->value));
+        if (!isset($point[$sourceField->source])) {
+            throw new \RuntimeException(\sprintf('Source "%s" not found in the data point.', $sourceField->source));
         }
-        if (!isset($point[$sourceField->source->value][$sourceField->aggregation->value])) {
-            throw new \RuntimeException(\sprintf('Aggregation "%s" not found for source "%s".', $sourceField->aggregation->value, $sourceField->source->value));
+        if (!isset($point[$sourceField->source][$sourceField->aggregation])) {
+            throw new \RuntimeException(\sprintf('Aggregation "%s" not found for source "%s".', $sourceField->aggregation, $sourceField->source));
         }
 
-        return $point[$sourceField->source->value][$sourceField->aggregation->value];
+        return $point[$sourceField->source][$sourceField->aggregation];
     }
 
     /**
