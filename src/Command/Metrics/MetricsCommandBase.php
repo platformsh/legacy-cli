@@ -115,9 +115,7 @@ abstract class MetricsCommandBase extends CommandBase
         if (!$environment->hasLink('#observability-pipeline')) {
             return false;
         }
-        return $environment->hasLink('#observability-pipeline') ?
-            rtrim($environment->getLink('#observability-pipeline'), '/') . '/resources/overview'
-            : false;
+        return rtrim($environment->getLink('#observability-pipeline'), '/') . '/resources/overview';
     }
 
     /**
@@ -142,10 +140,6 @@ abstract class MetricsCommandBase extends CommandBase
         // Common
         if (!$this->table->formatIsMachineReadable()) {
             $this->selector->ensurePrintedSelection($selection);
-        }
-
-        if (!$this->api->getCurrentDeployment($environment)) {
-            throw new \RuntimeException('The environment does not have a current deployment.');
         }
 
         if (!$link = $this->getResourcesOverviewUrl($environment)) {
