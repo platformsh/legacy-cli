@@ -19,19 +19,19 @@ class MemCommand extends MetricsCommandBase
     /**
      * @var array
      */
-    private static $tableHeader = array(
+    private static $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
         'used' => 'Used',
         'limit' => 'Limit',
         'percent' => 'Used %',
-    );
+    ];
 
     /**
      * @var array
      */
-    private $defaultColumns = array('timestamp', 'service', 'used', 'limit', 'percent');
+    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
 
     /**
      * {@inheritdoc}
@@ -39,7 +39,7 @@ class MemCommand extends MetricsCommandBase
     protected function configure()
     {
         $this->setName('metrics:memory')
-            ->setAliases(array('mem', 'memory'))
+            ->setAliases(['mem', 'memory'])
             ->setDescription('Show memory usage of an environment')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addMetricsOptions()->addProjectOption()->addEnvironmentOption();
@@ -54,14 +54,14 @@ class MemCommand extends MetricsCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $result = $this->processQuery($input, array(MetricKind::API_TYPE_MEMORY), array(MetricKind::API_AGG_AVG));
+        $result = $this->processQuery($input, [MetricKind::API_TYPE_MEMORY], [MetricKind::API_AGG_AVG]);
 
         $values = $result[0];
         $environment = $result[1];
 
         $bytes = $input->getOption('bytes');
 
-        $rows = $this->buildRows($values, array(
+        $rows = $this->buildRows($values, [
             'used' => new Field(
                 $bytes ? Format::ROUNDED : Format::MEMORY,
                 new SourceField(MetricKind::MEMORY_USED, Aggregation::AVG)
@@ -78,7 +78,7 @@ class MemCommand extends MetricsCommandBase
                 ),
                 false
             ),
-        ), $environment);
+        ], $environment);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');

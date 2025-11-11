@@ -10,9 +10,9 @@ class Query
     /** @var array|null */
     private $services = null;
     /** @var array */
-    private $types = array();
+    private $types = [];
     /** @var array */
-    private $aggs = array();
+    private $aggs = [];
     /** @var int */
     private $startTime;
     /** @var int */
@@ -75,10 +75,10 @@ class Query
      */
     public function asArray()
     {
-        $query = array(
+        $query = [
             'from' => $this->startTime,
             'to' => $this->endTime,
-        );
+        ];
 
         if (!empty($this->services)) {
             $query['services_mode'] = '1';

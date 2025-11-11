@@ -19,7 +19,7 @@ class DiskUsageCommand extends MetricsCommandBase
     /**
      * @var array
      */
-    private static $tableHeader = array(
+    private static $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -35,17 +35,17 @@ class DiskUsageCommand extends MetricsCommandBase
         'tmp_iused' => '/tmp inodes used',
         'tmp_ilimit' => '/tmp inodes limit',
         'tmp_ipercent' => '/tmp inodes %',
-    );
+    ];
 
     /**
      * @var array
      */
-    private $defaultColumns = array('timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent');
+    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
 
     /**
      * @var array
      */
-    private $tmpReportColumns = array('timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent');
+    private $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
 
     /**
      * {@inheritdoc}
@@ -53,7 +53,7 @@ class DiskUsageCommand extends MetricsCommandBase
     protected function configure()
     {
         $this->setName('metrics:disk-usage')
-            ->setAliases(array('disk'))
+            ->setAliases(['disk'])
             ->setDescription('Show disk usage of an environment')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')');
@@ -73,14 +73,14 @@ class DiskUsageCommand extends MetricsCommandBase
             $input->setOption('columns', $this->tmpReportColumns);
         }
 
-        $result = $this->processQuery($input, array(MetricKind::API_TYPE_DISK, MetricKind::API_TYPE_INODES), array(MetricKind::API_AGG_AVG));
+        $result = $this->processQuery($input, [MetricKind::API_TYPE_DISK, MetricKind::API_TYPE_INODES], [MetricKind::API_AGG_AVG]);
 
         $values = $result[0];
         $environment = $result[1];
 
         $bytes = $input->getOption('bytes');
 
-        $rows = $this->buildRows($values, array(
+        $rows = $this->buildRows($values, [
             'used' => new Field(
                 $bytes ? Format::ROUNDED : Format::DISK,
                 new SourceField(MetricKind::DISK_USED, Aggregation::AVG, '/mnt')
@@ -144,7 +144,7 @@ class DiskUsageCommand extends MetricsCommandBase
                     new SourceField(MetricKind::INODES_LIMIT, Aggregation::MAX, '/tmp')
                 )
             ),
-        ), $environment);
+        ], $environment);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');

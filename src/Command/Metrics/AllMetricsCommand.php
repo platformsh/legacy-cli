@@ -19,7 +19,7 @@ class AllMetricsCommand extends MetricsCommandBase
     /**
      * @var array
      */
-    private static $tableHeader = array(
+    private static $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -47,12 +47,12 @@ class AllMetricsCommand extends MetricsCommandBase
         'tmp_inodes_used' => '/tmp inodes used',
         'tmp_inodes_limit' => '/tmp inodes limit',
         'tmp_inodes_percent' => '/tmp inodes %',
-    );
+    ];
 
     /**
      * @var array
      */
-    private $defaultColumns = array(
+    private $defaultColumns = [
         'timestamp',
         'service',
 
@@ -63,7 +63,7 @@ class AllMetricsCommand extends MetricsCommandBase
 
         'tmp_disk_percent',
         'tmp_inodes_percent',
-    );
+    ];
 
 
     /**
@@ -72,7 +72,7 @@ class AllMetricsCommand extends MetricsCommandBase
     protected function configure()
     {
         $this->setName('metrics:all')
-            ->setAliases(array('metrics', 'met'))
+            ->setAliases(['metrics', 'met'])
             ->setDescription('Show CPU, disk and memory metrics for an environment')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
@@ -90,19 +90,19 @@ class AllMetricsCommand extends MetricsCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $result = $this->processQuery($input, array(
+        $result = $this->processQuery($input, [
             MetricKind::API_TYPE_CPU,
             MetricKind::API_TYPE_DISK,
             MetricKind::API_TYPE_MEMORY,
             MetricKind::API_TYPE_INODES,
-        ), array(MetricKind::API_AGG_AVG));
+        ], [MetricKind::API_AGG_AVG]);
 
         $values = $result[0];
         $environment = $result[1];
 
         $bytes = $input->getOption('bytes');
 
-        $rows = $this->buildRows($values, array(
+        $rows = $this->buildRows($values, [
             'cpu_used' => new Field(
                 Format::ROUNDED_2P,
                 new SourceField(MetricKind::CPU_USED, Aggregation::AVG)
@@ -199,7 +199,7 @@ class AllMetricsCommand extends MetricsCommandBase
                     new SourceField(MetricKind::INODES_LIMIT, Aggregation::MAX, '/tmp')
                 )
             ),
-        ), $environment);
+        ], $environment);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');

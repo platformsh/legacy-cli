@@ -18,19 +18,19 @@ class CpuCommand extends MetricsCommandBase
     /**
      * @var array
      */
-    private static $tableHeader = array(
+    private static $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
         'used' => 'Used',
         'limit' => 'Limit',
         'percent' => 'Used %',
-    );
+    ];
 
     /**
      * @var array
      */
-    private $defaultColumns = array('timestamp', 'service', 'used', 'limit', 'percent');
+    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
 
     /**
      * {@inheritdoc}
@@ -38,7 +38,7 @@ class CpuCommand extends MetricsCommandBase
     protected function configure()
     {
         $this->setName('metrics:cpu')
-            ->setAliases(array('cpu'))
+            ->setAliases(['cpu'])
             ->setDescription('Show CPU usage of an environment');
         $this->addMetricsOptions()->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), self::$tableHeader, $this->defaultColumns);
@@ -52,12 +52,12 @@ class CpuCommand extends MetricsCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $result = $this->processQuery($input, array(MetricKind::API_TYPE_CPU), array(MetricKind::API_AGG_AVG));
+        $result = $this->processQuery($input, [MetricKind::API_TYPE_CPU], [MetricKind::API_AGG_AVG]);
 
         $values = $result[0];
         $environment = $result[1];
 
-        $rows = $this->buildRows($values, array(
+        $rows = $this->buildRows($values, [
             'used' => new Field(
                 Format::ROUNDED_2P,
                 new SourceField(MetricKind::CPU_USED, Aggregation::AVG)
@@ -73,7 +73,7 @@ class CpuCommand extends MetricsCommandBase
                     new SourceField(MetricKind::CPU_LIMIT, Aggregation::MAX)
                 )
             ),
-        ), $environment);
+        ], $environment);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');

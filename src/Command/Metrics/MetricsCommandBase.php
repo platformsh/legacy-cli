@@ -152,7 +152,7 @@ abstract class MetricsCommandBase extends CommandBase
         if ($input->getOption('latest')) {
             foreach (array_reverse($items['data']) as $item) {
                 if (isset($item['services'])) {
-                    $items['data'] = array($item);
+                    $items['data'] = [$item];
                     break;
                 }
             }
@@ -173,7 +173,7 @@ abstract class MetricsCommandBase extends CommandBase
             throw new \RuntimeException('No data points were found in the metrics response.');
         }
 
-        return array($items, $environment);
+        return [$items, $environment];
     }
 
     /**
@@ -187,23 +187,23 @@ abstract class MetricsCommandBase extends CommandBase
         $deployment = $this->api()->getCurrentDeployment($environment);
         $allServices = array_merge($deployment->webapps, $deployment->services, $deployment->workers);
         $servicesInput = ArrayArgument::getOption($input, 'service');
-        $selectedServiceNames = array();
+        $selectedServiceNames = [];
         if (!empty($servicesInput)) {
-            $selectedServiceNames = Wildcard::select(array_merge(array_keys($allServices), array('router')), $servicesInput);
+            $selectedServiceNames = Wildcard::select(array_merge(array_keys($allServices), ['router']), $servicesInput);
             if (!$selectedServiceNames) {
                 $this->stdErr->writeln('No services were found matching the name(s): <error>' . implode(', ', $servicesInput) . '</error>');
 
                 throw new \RuntimeException('No services were found matching the name(s): ' . implode(', ', $servicesInput));
             }
         } elseif ($typeInput = ArrayArgument::getOption($input, 'type')) {
-            $byType = array();
+            $byType = [];
             foreach ($allServices as $name => $service) {
                 $type = $service->type;
                 list($prefix) = explode(':', $service->type, 2);
                 $byType[$type][] = $name;
                 $byType[$prefix][] = $name;
             }
-            $selectedKeys = Wildcard::select(array_merge(array_keys($byType), array('router')), $typeInput);
+            $selectedKeys = Wildcard::select(array_merge(array_keys($byType), ['router']), $typeInput);
             if (!$selectedKeys) {
                 $this->stdErr->writeln('No services were found matching the type(s): <error>' . implode(', ', $typeInput) . '</error>');
 
@@ -276,9 +276,9 @@ abstract class MetricsCommandBase extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
         $sortServices = $this->getSortedServices($environment);
-        $serviceTypes = array();
+        $serviceTypes = [];
 
-        $rows = array();
+        $rows = [];
         $lastCountPerTimestamp = 0;
         foreach ($values['data'] as $point) {
             $timestamp = $point['timestamp'];
@@ -301,8 +301,8 @@ abstract class MetricsCommandBase extends CommandBase
                     $serviceTypes[$service] = $this->getServiceType($environment, $service);
                 }
 
-                $row = array();
-                $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, array('wrap' => false));
+                $row = [];
+                $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, ['wrap' => false]);
                 $row['service'] = $service;
                 $row['type'] = $formatter->format($serviceTypes[$service], 'service_type');
                 foreach ($fieldMapping as $field => $fieldDefinition) {
@@ -356,7 +356,7 @@ abstract class MetricsCommandBase extends CommandBase
         sort($appAndWorkerNames, SORT_NATURAL);
         $serviceNames = array_keys($deployment->services);
         sort($serviceNames, SORT_NATURAL);
-        $nameOrder = array_flip(array_merge($appAndWorkerNames, $serviceNames, array('router')));
+        $nameOrder = array_flip(array_merge($appAndWorkerNames, $serviceNames, ['router']));
         $sortServices = function ($a, $b) use ($nameOrder) {
             $aPos = isset($nameOrder[$a]) ? $nameOrder[$a] : 1000;
             $bPos = isset($nameOrder[$b]) ? $nameOrder[$b] : 1000;
