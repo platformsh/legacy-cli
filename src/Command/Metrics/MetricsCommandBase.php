@@ -409,7 +409,7 @@ abstract class MetricsCommandBase extends CommandBase
             throw new \RuntimeException(\sprintf('Source "%s" not found in the data point.', $sourceField->source));
         }
         if (!isset($point[$sourceField->source][$sourceField->aggregation])) {
-            throw new \RuntimeException(\sprintf('Aggregation "%s" not found for source "%s".', $sourceField->aggregation, $sourceField->source));
+            return null;
         }
 
         return $point[$sourceField->source][$sourceField->aggregation];
