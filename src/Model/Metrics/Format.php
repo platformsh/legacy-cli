@@ -35,10 +35,10 @@ enum Format: string
         return \sprintf('%.1f%%', $pc);
     }
 
-    public function format(?float $value, bool $warn = true): string
+    public function format(?float $value, bool $warn = true): string|float|int|null
     {
         if (null === $value) {
-            return '';
+            return null;
         }
 
         if (PHP_INT_MAX === (int) $value) {
@@ -46,8 +46,8 @@ enum Format: string
         }
 
         return match ($this) {
-            Format::Rounded => (string) round($value),
-            Format::Rounded2p => (string) round($value, 2),
+            Format::Rounded => round($value),
+            Format::Rounded2p => round($value, 2),
             Format::Percent => $this->formatPercent($value, $warn),
             Format::Disk, Format::Memory => FormatterHelper::formatMemory((int) $value),
         };
