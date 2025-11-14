@@ -32,6 +32,7 @@ class TunnelOpenCommand extends TunnelCommandBase
     protected function configure(): void
     {
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
+        $this->addOption('json', null, InputOption::VALUE_NONE, 'Outputs tunnel information in JSON on stdout');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
@@ -122,6 +123,7 @@ class TunnelOpenCommand extends TunnelCommandBase
 
         $error = false;
         $processIds = [];
+        $tunnels = [];
         foreach ($relationships as $name => $services) {
             foreach ($services as $key => $service) {
                 $service['_relationship_name'] = $name;
@@ -136,6 +138,7 @@ class TunnelOpenCommand extends TunnelCommandBase
                         $relationshipString,
                         $this->tunnelManager->getUrl($openTunnelInfo),
                     ));
+                    $tunnels[$relationshipString] = ['relationship' => $relationshipString, 'url' => $this->tunnelManager->getUrl($tunnel),];
                     continue;
                 }
 
@@ -175,6 +178,7 @@ class TunnelOpenCommand extends TunnelCommandBase
                     $relationshipString,
                     $this->tunnelManager->getUrl($tunnel),
                 ));
+                $tunnels[$relationshipString] = ['relationship' => $relationshipString, 'url' => $this->tunnelManager->getUrl($tunnel),];
 
                 $processIds[] = $pid;
             }
@@ -197,6 +201,10 @@ class TunnelOpenCommand extends TunnelCommandBase
                 "Save encoded tunnel details to the $variable variable using:"
                 . "\n  <info>export $variable=\"$($executable tunnel:info --encode)\"</info>",
             );
+        }
+
+        if ($input->getOption('json')) {
+            $output->writeln(json_encode(['tunnels' => $tunnels], JSON_THROW_ON_ERROR));
         }
 
         $processManager->killParent($error);

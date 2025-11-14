@@ -29,8 +29,10 @@ class TunnelSingleCommand extends TunnelCommandBase
     protected function configure(): void
     {
         $this
-            ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');
-        $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
+            ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port')
+            ->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports')
+            ->addOption('json', null, InputOption::VALUE_NONE, 'Outputs tunnel information in JSON on stdout')
+        ;
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
@@ -145,6 +147,10 @@ class TunnelSingleCommand extends TunnelCommandBase
         $this->stdErr->writeln('Quitting this command (with Ctrl+C or equivalent) will close the tunnel.');
 
         $this->stdErr->writeln('');
+
+        if ($input->getOption('json')) {
+            $output->writeln(json_encode(['tunnel' => ['relationship' => $relationshipString, 'url' => $this->tunnelManager->getUrl($tunnel),]], JSON_THROW_ON_ERROR));
+        }
 
         $processManager->monitor($this->stdErr);
 
