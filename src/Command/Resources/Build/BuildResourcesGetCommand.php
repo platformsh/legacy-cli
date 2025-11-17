@@ -2,13 +2,13 @@
 
 namespace Platformsh\Cli\Command\Resources\Build;
 
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class BuildResourcesGetCommand extends CommandBase
+class BuildResourcesGetCommand extends ResourcesCommandBase
 {
     protected $tableHeader = [
         'cpu' => 'CPU',
