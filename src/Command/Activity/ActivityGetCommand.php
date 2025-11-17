@@ -120,7 +120,11 @@ class ActivityGetCommand extends ActivityCommandBase
         $rows = [];
         foreach ($properties as $property => $value) {
             $header[] = $property;
-            $rows[] = $formatter->format($value, $property);
+            if ($property === 'result') {
+                $rows[] = ActivityMonitor::formatResult($activity, !$table->formatIsMachineReadable());
+            } else {
+                $rows[] = $formatter->format($value, $property);
+            }
         }
 
         $table->renderSimple($rows, $header);

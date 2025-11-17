@@ -72,7 +72,7 @@ class EnvironmentDeployCommand extends CommandBase
                 'created' => $formatter->format($activity['created_at'], 'created_at'),
                 'description' => ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
                 'type' => new AdaptiveTableCell($activity->type, ['wrap' => false]),
-                'result' => ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
+                'result' => ActivityMonitor::formatResult($activity, !$table->formatIsMachineReadable()),
             ];
             $rows[] = $row;
         }
