@@ -4,20 +4,19 @@ namespace Platformsh\Cli\Model\Metrics;
 
 class TimeSpec
 {
+    /** @var int */
     private $startTime;
+    /** @var int */
     private $endTime;
-    private $interval;
 
     /**
-     * @param int $startTime Start time (UNIX timestamp).
-     * @param int $endTime End time (UNIX timestamp).
-     * @param int $interval Interval (seconds).
+     * @param int $startTime start time (UNIX timestamp)
+     * @param int $endTime   end time (UNIX timestamp)
      */
-    public function __construct($startTime, $endTime, $interval)
+    public function __construct($startTime, $endTime)
     {
         $this->startTime = $startTime;
         $this->endTime = $endTime;
-        $this->interval = $interval;
     }
 
     /**
@@ -34,13 +33,5 @@ class TimeSpec
     public function getEndTime()
     {
         return $this->endTime;
-    }
-
-    /**
-     * @return int
-     */
-    public function getInterval()
-    {
-        return $this->interval;
     }
 }

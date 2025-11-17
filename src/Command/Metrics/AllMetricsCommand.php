@@ -1,8 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
-use Khill\Duration\Duration;
+use Platformsh\Cli\Model\Metrics\Aggregation;
 use Platformsh\Cli\Model\Metrics\Field;
+use Platformsh\Cli\Model\Metrics\Format;
+use Platformsh\Cli\Model\Metrics\MetricKind;
+use Platformsh\Cli\Model\Metrics\SourceField;
+use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
+use Khill\Duration\Duration;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,7 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AllMetricsCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    /**
+     * @var array
+     */
+    private static $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -41,7 +49,22 @@ class AllMetricsCommand extends MetricsCommandBase
         'tmp_inodes_percent' => '/tmp inodes %',
     ];
 
-    private $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
+    /**
+     * @var array
+     */
+    private $defaultColumns = [
+        'timestamp',
+        'service',
+
+        'cpu_percent',
+        'mem_percent',
+        'disk_percent',
+        'inodes_percent',
+
+        'tmp_disk_percent',
+        'tmp_inodes_percent',
+    ];
+
 
     /**
      * {@inheritdoc}
@@ -53,85 +76,145 @@ class AllMetricsCommand extends MetricsCommandBase
             ->setDescription('Show CPU, disk and memory metrics for an environment')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
-        $this->addExample('Show metrics in five-minute intervals over the last hour', '-i 5m -r 1h');
+        $this->addExample('Show metrics over the last hour', ' -r 1h');
         $this->addExample('Show metrics for all SQL services', '--type mariadb,%sql');
-        $this->addMetricsOptions()
-            ->addProjectOption()
-            ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
+        $this->addMetricsOptions()->addProjectOption()->addEnvironmentOption();
+        Table::configureInput($this->getDefinition(), self::$tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
     /**
-     * {@inheritdoc}
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $timeSpec = $this->validateTimeInput($input);
-        if ($timeSpec === false) {
-            return 1;
-        }
+        $result = $this->processQuery($input, [
+            MetricKind::API_TYPE_CPU,
+            MetricKind::API_TYPE_DISK,
+            MetricKind::API_TYPE_MEMORY,
+            MetricKind::API_TYPE_INODES,
+        ], [MetricKind::API_AGG_AVG]);
 
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input, false, true);
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
-        if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
-        }
-
-        // Only request the metrics fields that will be displayed.
-        //
-        // The fields are the selected column names (according to the $table
-        // service), filtered to only those that contain an underscore.
-        $fieldNames = array_filter($table->columnsToDisplay($this->tableHeader, $this->defaultColumns), function ($c) { return strpos($c, '_') !== false; });
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), $fieldNames);
-        if ($values === false) {
-            return 1;
-        }
+        $values = $result[0];
+        $environment = $result[1];
 
         $bytes = $input->getOption('bytes');
 
         $rows = $this->buildRows($values, [
-            'cpu_used' => new Field('cpu_used', Field::FORMAT_ROUNDED_2DP),
-            'cpu_limit' => new Field('cpu_limit', Field::FORMAT_ROUNDED_2DP),
-            'cpu_percent' => new Field('cpu_percent', Field::FORMAT_PERCENT),
+            'cpu_used' => new Field(
+                Format::ROUNDED_2P,
+                new SourceField(MetricKind::CPU_USED, Aggregation::AVG)
+            ),
+            'cpu_limit' => new Field(
+                Format::ROUNDED_2P,
+                new SourceField(MetricKind::CPU_LIMIT, Aggregation::MAX)
+            ),
+            'cpu_percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::CPU_USED, Aggregation::AVG),
+                    new SourceField(MetricKind::CPU_LIMIT, Aggregation::MAX)
+                )
+            ),
 
-            'mem_used' => new Field('mem_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
-            'mem_limit' => new Field('mem_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
-            'mem_percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
+            'mem_used' => new Field(
+                $bytes ? Format::ROUNDED : Format::MEMORY,
+                new SourceField(MetricKind::MEMORY_USED, Aggregation::AVG)
+            ),
+            'mem_limit' => new Field(
+                $bytes ? Format::ROUNDED : Format::MEMORY,
+                new SourceField(MetricKind::MEMORY_LIMIT, Aggregation::MAX)
+            ),
+            'mem_percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::MEMORY_USED, Aggregation::AVG),
+                    new SourceField(MetricKind::MEMORY_LIMIT, Aggregation::MAX)
+                ),
+                false
+            ),
 
-            'disk_used' => new Field('disk_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'disk_limit' => new Field('disk_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'disk_percent' => new Field('disk_percent', Field::FORMAT_PERCENT),
+            'disk_used' => new Field(
+                $bytes ? Format::ROUNDED : Format::DISK,
+                new SourceField(MetricKind::DISK_USED, Aggregation::AVG, '/mnt')
+            ),
+            'disk_limit' => new Field(
+                $bytes ? Format::ROUNDED : Format::DISK,
+                new SourceField(MetricKind::DISK_LIMIT, Aggregation::MAX, '/mnt')
+            ),
+            'disk_percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::DISK_USED, Aggregation::AVG, '/mnt'),
+                    new SourceField(MetricKind::DISK_LIMIT, Aggregation::MAX, '/mnt')
+                )
+            ),
 
-            'tmp_disk_used' => new Field('tmp_disk_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'tmp_disk_limit' => new Field('tmp_disk_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
-            'tmp_disk_percent' => new Field('tmp_disk_percent', Field::FORMAT_PERCENT),
+            'tmp_disk_used' => new Field(
+                $bytes ? Format::ROUNDED : Format::DISK,
+                new SourceField(MetricKind::DISK_USED, Aggregation::AVG, '/tmp')
+            ),
+            'tmp_disk_limit' => new Field(
+                $bytes ? Format::ROUNDED : Format::DISK,
+                new SourceField(MetricKind::DISK_LIMIT, Aggregation::MAX, '/tmp')
+            ),
+            'tmp_disk_percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::DISK_USED, Aggregation::AVG, '/tmp'),
+                    new SourceField(MetricKind::DISK_LIMIT, Aggregation::MAX, '/tmp')
+                )
+            ),
 
-            'inodes_used' => new Field('inodes_used', Field::FORMAT_ROUNDED),
-            'inodes_limit' => new Field('inodes_used', Field::FORMAT_ROUNDED),
-            'inodes_percent' => new Field('inodes_percent', Field::FORMAT_PERCENT),
+            'inodes_used' => new Field(
+                Format::ROUNDED,
+                new SourceField(MetricKind::INODES_USED, Aggregation::AVG, '/mnt')
+            ),
+            'inodes_limit' => new Field(
+                Format::ROUNDED,
+                new SourceField(MetricKind::INODES_LIMIT, Aggregation::MAX, '/mnt')
+            ),
+            'inodes_percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::INODES_USED, Aggregation::AVG, '/mnt'),
+                    new SourceField(MetricKind::INODES_LIMIT, Aggregation::MAX, '/mnt')
+                )
+            ),
 
-            'tmp_inodes_used' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
-            'tmp_inodes_limit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
-            'tmp_inodes_percent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
-        ]);
+            'tmp_inodes_used' => new Field(
+                Format::ROUNDED,
+                new SourceField(MetricKind::INODES_USED, Aggregation::AVG, '/tmp')
+            ),
+            'tmp_inodes_limit' => new Field(
+                Format::ROUNDED,
+                new SourceField(MetricKind::INODES_LIMIT, Aggregation::MAX, '/tmp')
+            ),
+            'tmp_inodes_percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::INODES_USED, Aggregation::AVG, '/tmp'),
+                    new SourceField(MetricKind::INODES_LIMIT, Aggregation::MAX, '/tmp')
+                )
+            ),
+        ], $environment);
 
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
         if (!$table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime())
+                (new Duration())->humanize($values['_grain']),
+                $formatter->formatDate($values['_from']),
+                $formatter->formatDate($values['_to'])
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $table->render($rows, self::$tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->explainHighMemoryServices();

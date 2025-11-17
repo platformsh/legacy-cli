@@ -1,8 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
-use Khill\Duration\Duration;
+use Platformsh\Cli\Model\Metrics\Aggregation;
 use Platformsh\Cli\Model\Metrics\Field;
+use Platformsh\Cli\Model\Metrics\Format;
+use Platformsh\Cli\Model\Metrics\MetricKind;
+use Platformsh\Cli\Model\Metrics\SourceField;
+use Platformsh\Cli\Model\Metrics\SourceFieldPercentage;
+use Khill\Duration\Duration;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,7 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CpuCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    /**
+     * @var array
+     */
+    private static $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -19,6 +27,9 @@ class CpuCommand extends MetricsCommandBase
         'percent' => 'Used %',
     ];
 
+    /**
+     * @var array
+     */
     private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
 
     /**
@@ -29,55 +40,55 @@ class CpuCommand extends MetricsCommandBase
         $this->setName('metrics:cpu')
             ->setAliases(['cpu'])
             ->setDescription('Show CPU usage of an environment');
-        $this->addMetricsOptions()
-            ->addProjectOption()
-            ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
+        $this->addMetricsOptions()->addProjectOption()->addEnvironmentOption();
+        Table::configureInput($this->getDefinition(), self::$tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
     /**
-     * {@inheritdoc}
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $timeSpec = $this->validateTimeInput($input);
-        if ($timeSpec === false) {
-            return 1;
-        }
+        $result = $this->processQuery($input, [MetricKind::API_TYPE_CPU], [MetricKind::API_AGG_AVG]);
 
-        $this->validateInput($input, false, true);
+        $values = $result[0];
+        $environment = $result[1];
+
+        $rows = $this->buildRows($values, [
+            'used' => new Field(
+                Format::ROUNDED_2P,
+                new SourceField(MetricKind::CPU_USED, Aggregation::AVG)
+            ),
+            'limit' => new Field(
+                Format::ROUNDED_2P,
+                new SourceField(MetricKind::CPU_LIMIT, Aggregation::MAX)
+            ),
+            'percent' => new Field(
+                Format::PERCENT,
+                new SourceFieldPercentage(
+                    new SourceField(MetricKind::CPU_USED, Aggregation::AVG),
+                    new SourceField(MetricKind::CPU_LIMIT, Aggregation::MAX)
+                )
+            ),
+        ], $environment);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-
-        if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
-        }
-
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['cpu_used', 'cpu_percent', 'cpu_limit']);
-        if ($values === false) {
-            return 1;
-        }
-
-        $rows = $this->buildRows($values, [
-            'used' => new Field('cpu_used', Field::FORMAT_ROUNDED_2DP),
-            'limit' => new Field('cpu_limit', Field::FORMAT_ROUNDED_2DP),
-            'percent' => new Field('cpu_percent', Field::FORMAT_PERCENT),
-        ]);
-
         if (!$table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
                 'Average CPU usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime())
+                (new Duration())->humanize($values['_grain']),
+                $formatter->formatDate($values['_from']),
+                $formatter->formatDate($values['_to'])
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $table->render($rows, self::$tableHeader, $this->defaultColumns);
 
         return 0;
     }
