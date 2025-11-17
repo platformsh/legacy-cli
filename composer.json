@@ -1,6 +1,6 @@
 {
     "name": "platformsh/cli",
-    "description": "Upsun (formerly Platform.sh) CLI",
+    "description": "Platform.sh CLI",
     "license": "MIT",
     "require": {
         "php": ">=5.5.9",
