@@ -182,10 +182,12 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        if (!$targetEnvironment->operationAvailable('deploy', true)) {
-            $this->stdErr->writeln(sprintf('Deployment strategy: <info>%s</info>', $strategy ?: "stopstart"));
-        } else {
-            $this->stdErr->writeln('The activity will be staged, ignoring the deployment strategy.');
+        if ($targetEnvironment) {
+            if (!$targetEnvironment->operationAvailable('deploy', true)) {
+                $this->stdErr->writeln(sprintf('Deployment strategy: <info>%s</info>', $strategy ?: "stopstart"));
+            } else {
+                $this->stdErr->writeln('The activity will be staged, ignoring the deployment strategy.');
+            }
         }
 
         $this->stdErr->writeln('');
