@@ -29,7 +29,7 @@ class AutoscalingSettingsGetCommand extends CommandBase
     {
         $this->setName('autoscaling:get')
             ->setAliases(['autoscaling'])
-            ->setDescription('View the autoscaling configuration of apps and workers on an environment');
+            ->setDescription('View the autoscaling configuration of apps, workers, and services on an environment');
         $this->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
@@ -61,9 +61,9 @@ class AutoscalingSettingsGetCommand extends CommandBase
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 
-        $services = array_merge($deployment->webapps, $deployment->workers);
+        $services = $this->api()->allServices($deployment);
         if (empty($services)) {
-            $this->stdErr->writeln('No apps or workers found.');
+            $this->stdErr->writeln('No apps, workers, or services found.');
             return 1;
         }
 
