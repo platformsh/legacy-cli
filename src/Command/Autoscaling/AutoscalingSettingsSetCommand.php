@@ -179,7 +179,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
         if ($showInteractiveForm) {
             // Interactive mode: let user select services and configure them
-            $serviceNames = array_keys($services);
+            // Filter to only show services that support autoscaling
+            $supportedServices = $this->filterServicesWithAutoscalingSupport($services);
+
+            if (empty($supportedServices)) {
+                $this->stdErr->writeln('No services that support autoscaling were found.');
+                return 1;
+            }
+
+            $serviceNames = array_keys($supportedServices);
 
             if ($service === null) {
                 // Ask user to select services to configure
@@ -188,9 +196,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $selectedService = $questionHelper->choose($serviceNames, $text, 0);
                 $service = $serviceNames[$selectedService];
             }
-
-            // Validate that the selected service supports autoscaling
-            $this->validateServiceSupportsAutoscaling($service, $services[$service]);
 
             // Get autoscaling current values for selected service
             $currentServiceSettings = $autoscalingSettings['services'][$service];
@@ -658,9 +663,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
     {
         $properties = $service->getProperties();
 
-        // If supports_horizontal_scaling is explicitly set, use that value
-        if (isset($properties['supports_horizontal_scaling'])) {
-            if (!$properties['supports_horizontal_scaling']) {
+        // For apps and workers: check supports_horizontal_scaling if present, otherwise allow
+        if (!($service instanceof Service)) {
+            if (isset($properties['supports_horizontal_scaling']) && !$properties['supports_horizontal_scaling']) {
                 throw new InvalidArgumentException(sprintf(
                     'The %s <error>%s</error> does not support autoscaling.',
                     $this->typeName($service),
@@ -670,13 +675,57 @@ class AutoscalingSettingsSetCommand extends CommandBase
             return;
         }
 
-        // Fall back to current behavior: only apps and workers support autoscaling
-        if ($service instanceof Service) {
+        // For services: check both the deployment property and the project capability
+        if (!isset($properties['supports_horizontal_scaling']) || !$properties['supports_horizontal_scaling']) {
             throw new InvalidArgumentException(sprintf(
                 'The service <error>%s</error> does not support autoscaling.',
                 $serviceName
             ));
         }
+
+        $project = $this->getSelectedProject();
+        // Force refresh to ensure we have the latest capabilities
+        $capabilities = $this->api()->getProjectCapabilities($project, true);
+        if (empty($capabilities->autoscaling['supports_horizontal_scaling_services'])) {
+            throw new InvalidArgumentException(sprintf(
+                'The service <error>%s</error> does not support autoscaling because the project does not have horizontal scaling enabled for services.',
+                $serviceName
+            ));
+        }
+    }
+
+    /**
+     * Filters services to only those that support autoscaling.
+     *
+     * @param array $services Array of Service|WebApp|Worker objects
+     *
+     * @return array Filtered array of services that support autoscaling
+     */
+    protected function filterServicesWithAutoscalingSupport(array $services)
+    {
+        $project = $this->getSelectedProject();
+        // Force refresh to ensure we have the latest capabilities
+        $capabilities = $this->api()->getProjectCapabilities($project, true);
+        $servicesCapabilityEnabled = !empty($capabilities->autoscaling['supports_horizontal_scaling_services']);
+
+        return array_filter($services, function ($service) use ($servicesCapabilityEnabled) {
+            $properties = $service->getProperties();
+
+            // For apps and workers: check supports_horizontal_scaling if present, otherwise allow
+            if (!($service instanceof Service)) {
+                if (isset($properties['supports_horizontal_scaling'])) {
+                    return $properties['supports_horizontal_scaling'];
+                }
+                return true;
+            }
+
+            // For services: check both the deployment property and the project capability
+            if (!isset($properties['supports_horizontal_scaling']) || !$properties['supports_horizontal_scaling']) {
+                return false;
+            }
+
+            return $servicesCapabilityEnabled;
+        });
     }
 
     /**
