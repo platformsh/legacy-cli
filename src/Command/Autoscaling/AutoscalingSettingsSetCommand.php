@@ -179,7 +179,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
         if ($showInteractiveForm) {
             // Interactive mode: let user select services and configure them
-            $serviceNames = array_keys($services);
+            // Filter to only show services that support autoscaling
+            $supportedServices = $this->filterServicesWithAutoscalingSupport($services);
+
+            if (empty($supportedServices)) {
+                $this->stdErr->writeln('No services that support autoscaling were found.');
+                return 1;
+            }
+
+            $serviceNames = array_keys($supportedServices);
 
             if ($service === null) {
                 // Ask user to select services to configure
@@ -188,9 +196,6 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $selectedService = $questionHelper->choose($serviceNames, $text, 0);
                 $service = $serviceNames[$selectedService];
             }
-
-            // Validate that the selected service supports autoscaling
-            $this->validateServiceSupportsAutoscaling($service, $services[$service]);
 
             // Get autoscaling current values for selected service
             $currentServiceSettings = $autoscalingSettings['services'][$service];
@@ -677,6 +682,28 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $serviceName
             ));
         }
+    }
+
+    /**
+     * Filters services to only those that support autoscaling.
+     *
+     * @param array $services Array of Service|WebApp|Worker objects
+     *
+     * @return array Filtered array of services that support autoscaling
+     */
+    protected function filterServicesWithAutoscalingSupport(array $services)
+    {
+        return array_filter($services, function ($service) {
+            $properties = $service->getProperties();
+
+            // If supports_horizontal_scaling is explicitly set, use that value
+            if (isset($properties['supports_horizontal_scaling'])) {
+                return $properties['supports_horizontal_scaling'];
+            }
+
+            // Fall back to current behavior: only apps and workers support autoscaling
+            return !($service instanceof Service);
+        });
     }
 
     /**
