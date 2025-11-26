@@ -17,8 +17,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
     protected function configure()
     {
         $this->setName('autoscaling:set')
-            ->setDescription('Set the autoscaling configuration of apps or workers in an environment')
-            ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'Name of the app or worker to configure autoscaling for')
+            ->setDescription('Set the autoscaling configuration of apps, workers, or services in an environment')
+            ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'Name of the app, worker, or service to configure autoscaling for')
             ->addOption('metric', 'm', InputOption::VALUE_REQUIRED, 'Name of the metric to use for triggering autoscaling')
             ->addOption('enabled', null, InputOption::VALUE_REQUIRED, 'Enable autoscaling based on the given metric')
             ->addOption('threshold-up', null, InputOption::VALUE_REQUIRED, 'Threshold over which service will be scaled up')
@@ -34,7 +34,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             ->addEnvironmentOption();
 
         $helpLines = [
-            'Configure automatic scaling for apps or workers in an environment.',
+            'Configure automatic scaling for apps, workers, or services in an environment.',
             '',
             sprintf('You can also configure resources statically by running: <info>%s resources:set</info>', $this->config()->get('application.executable'))
         ];
@@ -80,9 +80,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 
-        $services = array_merge($deployment->webapps, $deployment->workers);
+        $services = $this->api()->allServices($deployment);
         if (empty($services)) {
-            $this->stdErr->writeln('No apps or workers found.');
+            $this->stdErr->writeln('No apps, workers, or services found.');
             return 1;
         }
 
@@ -93,6 +93,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $service = $input->getOption('service');
         if ($service !== null) {
             $service = $this->validateService($service, $services);
+            $this->validateServiceSupportsAutoscaling($service, $services[$service]);
         }
 
         $supportedMetrics = $this->getSupportedMetrics($defaults);
@@ -183,10 +184,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
             if ($service === null) {
                 // Ask user to select services to configure
                 $default = $serviceNames[0];
-                $text = 'Enter a number to choose an app or worker:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $text = 'Enter a number to choose a service:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $selectedService = $questionHelper->choose($serviceNames, $text, 0);
                 $service = $serviceNames[$selectedService];
             }
+
+            // Validate that the selected service supports autoscaling
+            $this->validateServiceSupportsAutoscaling($service, $services[$service]);
 
             // Get autoscaling current values for selected service
             $currentServiceSettings = $autoscalingSettings['services'][$service];
@@ -638,6 +642,41 @@ class AutoscalingSettingsSetCommand extends CommandBase
         }
         $serviceNames = array_keys($services);
         throw new InvalidArgumentException(sprintf('Invalid service name <error>%s</error>. Available services: %s', $value, implode(', ', $serviceNames)));
+    }
+
+    /**
+     * Validates that a service supports autoscaling.
+     *
+     * @param string $serviceName
+     * @param Service|WebApp|Worker $service
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return void
+     */
+    protected function validateServiceSupportsAutoscaling($serviceName, $service)
+    {
+        $properties = $service->getProperties();
+
+        // If supports_horizontal_scaling is explicitly set, use that value
+        if (isset($properties['supports_horizontal_scaling'])) {
+            if (!$properties['supports_horizontal_scaling']) {
+                throw new InvalidArgumentException(sprintf(
+                    'The %s <error>%s</error> does not support autoscaling.',
+                    $this->typeName($service),
+                    $serviceName
+                ));
+            }
+            return;
+        }
+
+        // Fall back to current behavior: only apps and workers support autoscaling
+        if ($service instanceof Service) {
+            throw new InvalidArgumentException(sprintf(
+                'The service <error>%s</error> does not support autoscaling.',
+                $serviceName
+            ));
+        }
     }
 
     /**
