@@ -19,11 +19,12 @@ final class Query
     public function __construct(
         private int $startTime,
         private int $endTime,
+        private ?int $interval,
     ) {}
 
     public static function fromTimeSpec(TimeSpec $timeSpec): self
     {
-        return new self($timeSpec->getStartTime(), $timeSpec->getEndTime());
+        return new self($timeSpec->getStartTime(), $timeSpec->getEndTime(), $timeSpec->getInterval());
     }
 
     /** @param array<String>|null $services */
@@ -57,6 +58,10 @@ final class Query
             'from' => $this->startTime,
             'to' => $this->endTime,
         ];
+
+        if (null !== $this->interval) {
+            $query['grain'] = $this->interval;
+        }
 
         if (!empty($this->services)) {
             $query['services_mode'] = '1';
