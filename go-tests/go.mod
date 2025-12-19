@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/go-chi/chi/v5 v5.2.3
-	github.com/platformsh/cli v0.0.0-20250919110327-7c630d2efeba
+	github.com/platformsh/cli v0.0.0-20260128142111-698419ab4b95
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.45.0
 )
