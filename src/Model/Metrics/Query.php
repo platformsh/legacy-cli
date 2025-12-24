@@ -18,14 +18,19 @@ class Query
     /** @var int */
     private $endTime;
 
+    /** @var int|null */
+    private $interval;
+
     /**
      * @param int $startTime
      * @param int $endTime
+     * @param int|null $interval
      */
-    public function __construct($startTime, $endTime)
+    public function __construct($startTime, $endTime, $interval = null)
     {
         $this->startTime = $startTime;
         $this->endTime = $endTime;
+        $this->interval = $interval;
     }
 
     /**
@@ -34,7 +39,7 @@ class Query
      */
     public static function fromTimeSpec($timeSpec)
     {
-        return new self($timeSpec->getStartTime(), $timeSpec->getEndTime());
+        return new self($timeSpec->getStartTime(), $timeSpec->getEndTime(), $timeSpec->getInterval());
     }
 
     /**
@@ -79,6 +84,10 @@ class Query
             'from' => $this->startTime,
             'to' => $this->endTime,
         ];
+
+        if (null !== $this->interval) {
+            $query['grain'] = $this->interval;
+        }
 
         if (!empty($this->services)) {
             $query['services_mode'] = '1';

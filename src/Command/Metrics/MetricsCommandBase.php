@@ -231,8 +231,6 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function validateTimeInput(InputInterface $input)
     {
-        $this->warnAboutDeprecatedOptions(['interval']);
-
         if ($to = $input->getOption('to')) {
             $endTime = \strtotime($to);
             if (!$endTime) {
@@ -260,8 +258,25 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         $startTime = $endTime - $rangeSeconds;
+        $interval = null;
 
-        return new TimeSpec($startTime, $endTime);
+        if ($intervalString = $input->getOption('interval')) {
+            $interval = (int) (new Duration())->toSeconds($intervalString);
+
+            if (empty($interval)) {
+                $this->stdErr->writeln('Invalid --range: <error>' . $intervalString . '</error>');
+
+                return false;
+            }
+
+            if ($interval > $endTime - $startTime) {
+                $this->stdErr->writeln(\sprintf('The --interval <error>%s</error> is invalid. It cannot be greater than the selected time range', $intervalString));
+
+                return false;
+            }
+        }
+
+        return new TimeSpec($startTime, $endTime, $interval);
     }
 
     /**
