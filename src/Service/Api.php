@@ -285,7 +285,7 @@ class Api
         $connectorOptions['verify'] = $this->config->getBool('api.skip_ssl') ? false : $this->caBundlePath();
 
         $connectorOptions['debug'] = false;
-        $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
+        $connectorOptions['client_id'] = $this->config->getStr('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->config->getUserAgent();
         $connectorOptions['timeout'] = $this->config->getInt('api.default_timeout');
 
@@ -295,6 +295,13 @@ class Api
         } elseif ($accessToken = $this->tokenConfig->getAccessToken()) {
             $connectorOptions['api_token'] = $accessToken;
             $connectorOptions['api_token_type'] = 'access';
+        }
+
+        if ($this->config->has('api.oauth2_client_secret')) {
+            $connectorOptions['client_secret'] = $this->config->getStr('api.oauth2_client_secret');
+        }
+        if ($this->config->has('api.oauth2_scopes')) {
+            $connectorOptions['scopes'] = (array) $this->config->get('api.oauth2_scopes');
         }
 
         $connectorOptions['proxy'] = $this->guzzleProxyConfig();
@@ -515,11 +522,17 @@ class Api
 
             $sessionId = $this->config->getSessionId();
 
-            // Override the session ID if an API token is set.
-            // This ensures file storage from other credentials will not be
-            // reused.
-            if (!empty($options['api_token'])) {
-                $sessionId = 'api-token-' . \substr(\hash('sha256', (string) $options['api_token']), 0, 32);
+            // Override the session ID if an API token or client credentials
+            // are set. This ensures file storage from other credentials will
+            // not be reused.
+            if (!empty($options['api_token']) || !empty($options['client_secret'])) {
+                $credsKeys = [];
+                foreach (['api_token', 'client_id', 'client_secret', 'scopes'] as $key) {
+                    if (array_key_exists($key, $options)) {
+                        $credsKeys[] = is_array($options[$key]) ? implode(' ', $options[$key]) : $options[$key];
+                    }
+                }
+                $sessionId = 'c-' . \hash('sha256', implode(':', $credsKeys));
             }
 
             // Set up a session to store OAuth2 tokens.
@@ -643,6 +656,11 @@ class Api
         return false;
     }
 
+    public function isUsingClientCredentials(): bool
+    {
+        return $this->config->has('api.oauth2_client_secret') && $this->getClient()->getMyUserId() === false;
+    }
+
     /**
      * Returns the project list for the current user.
      *
@@ -652,6 +670,10 @@ class Api
      */
     public function getMyProjects(?bool $refresh = null): array
     {
+        if ($this->isUsingClientCredentials()) {
+            return [];
+        }
+
         $new = $this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations');
         /** @var string[]|string|null $vendorFilter */
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
@@ -1716,6 +1738,17 @@ class Api
      */
     public function showSessionInfo(bool $logout = false, bool $newline = true): void
     {
+        if ($this->isUsingClientCredentials()) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $this->stdErr->writeln(\sprintf(
+                'Client credentials are configured (client ID: <info>%s</info>)',
+                $this->config->getStr('api.oauth2_client_id'),
+            ));
+            return;
+        }
+
         $sessionId = $this->config->getSessionId();
         if ($sessionId !== 'default' || count($this->listSessionIds()) > 1) {
             if ($newline) {
