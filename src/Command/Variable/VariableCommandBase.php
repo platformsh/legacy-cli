@@ -7,6 +7,7 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
+use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -180,6 +181,33 @@ abstract class VariableCommandBase extends CommandBase
                     return $this->getSelectedEnvironment()->id;
                 }
                 return null;
+            },
+        ]);
+        $fields['application_scope'] = new ArrayField('Application scope', [
+            'optionName' => 'app-scope',
+            'description' => 'A list of application names to which this variable will apply.',
+            'questionLine' => 'To which applications should this variable apply?',
+            'default' => [],
+            'required' => false,
+            //q'avoidQuestion' => true,
+            'validator' => function ($values) {
+                if ($this->hasSelectedEnvironment()) {
+                    $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment(), false, false);
+                    if (!$deployment) {
+                        return false;
+                    }
+                    $appNames = array_keys($deployment->webapps);
+                    foreach ($values as $value) {
+                        if (!in_array($value, $appNames, true)) {
+                            throw new InvalidArgumentException(sprintf(
+                                'The app "%s" was not found. Valid app names are: %s',
+                                $value,
+                                implode(', ', $appNames)
+                            ));
+                        }
+                    }
+                }
+                return true;
             },
         ]);
         $fields['name'] = new Field('Name', [
