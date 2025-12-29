@@ -367,6 +367,7 @@ detection:
     - Unable to find stack
     - Cannot build application of type
     - Invalid deployment
+    - Could not perform a rolling deployment
 
 # Pagination settings.
 #
