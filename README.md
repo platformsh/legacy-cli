@@ -75,6 +75,23 @@ There are two ways to authenticate:
 
     *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access.
 
+### Authentication in Docker (Compose)
+
+To prevent malicious attackers from serving the browser login page [1], the page is served on the local loopback address (`127.0.0.1`), and not on `localhost`. This does mean that if you containerize the cli using docker (compose), you won't be able to use the web browser login method. Because the browser login is the default authentication method, users will still be asked to go to the local address even though it won't be accessible from outside the container.
+
+To use API tokens [2] as default authentication and to ask for an api token instead of a browser login, you can add an environment variable to configure this: `{application.env_prefix}APPLICATION_LOGIN_METHOD`. by default, the `env_prefix` is set to `PLATFORMSH_CLI_`, so this would result in the following environment variable in your docker file:
+
+```dockerfile
+ENV PLATFORMSH_CLI_APPLICATION_LOGIN_METHOD api-token
+```
+
+or the following environment variable in compose.yaml when using docker compose:
+
+```yaml
+environment:
+    PLATFORMSH_CLI_APPLICATION_LOGIN_METHOD: api-token
+```
+
 ## Customization
 
 You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`.
