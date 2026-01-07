@@ -1,7 +1,11 @@
-# Platform.sh CLI configuration overrides.
+# Upsun CLI (Platform.sh compatibility) configuration overrides
 # See config-defaults.yaml for the default values and a list of other required keys.
+#
+# Platform.sh is now Upsun.
+#
+# These are settings for the 'platform' command, which is available for backwards compatibility.
 application:
-  name: 'Platform.sh CLI'
+  name: 'Upsun CLI (Platform.sh compatibility)'
   slug: 'platformsh-cli'
   executable: 'platform'
   env_prefix: 'PLATFORMSH_CLI_'
@@ -17,35 +21,31 @@ application:
     - self:install
     - self:update
 
-local:
-  # A legacy project config file from versions < 3.
-  project_config_legacy: 'platform-project.yaml'
-
 service:
-  name: 'Platform.sh'
+  name: 'Upsun (formerly Platform.sh)'
   env_prefix: 'PLATFORM_'
 
   project_config_dir: '.platform'
   app_config_file: '.platform.app.yaml'
 
-  console_url: 'https://console.platform.sh'
+  console_url: 'https://console.upsun.com'
 
-  docs_url: 'https://docs.platform.sh'
-  docs_search_url: 'https://docs.platform.sh/search.html?q={{ terms }}'
+  docs_url: 'https://docs.upsun.com'
+  docs_search_url: 'https://docs.upsun.com/search.html?q={{ terms }}'
 
-  register_url: 'https://auth.api.platform.sh/register'
-  reset_password_url: 'https://auth.api.platform.sh/reset-password'
+  register_url: 'https://auth.upsun.com/register'
+  reset_password_url: 'https://auth.upsun.com/reset-password'
 
-  pricing_url: 'https://platform.sh/pricing'
+  pricing_url: 'https://upsun.com/pricing'
 
   activity_type_list_url: 'https://docs.upsun.com/anchors/fixed/integrations/activity-scripts/type/'
 
   runtime_operations_help_url: 'https://docs.upsun.com/anchors/fixed/app/runtime-operations/'
 
 api:
-  base_url: 'https://api.platform.sh'
+  base_url: 'https://api.upsun.com'
 
-  auth_url: 'https://auth.api.platform.sh'
+  auth_url: 'https://auth.upsun.com'
   oauth2_client_id: 'platform-cli'
 
   organization_types: [flexible, fixed]
@@ -56,7 +56,7 @@ api:
   metrics: true
   teams: true
 
-  vendor_filter: 'platformsh'
+  vendor_filter: 'upsun'
 
 ssh:
   domain_wildcards: ['*.platform.sh']
@@ -64,7 +64,7 @@ ssh:
 detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh' # matches git.eu-5.platform.sh, etc.
-  site_domains: ['platform.sh', 'platformsh.site', 'tst.site']
+  site_domains: ['platform.sh', 'platformsh.site', 'tst.site', 'upsunapp.com', 'upsun.app']
   cluster_header: 'X-Platform-Cluster'
 
 migrate:
