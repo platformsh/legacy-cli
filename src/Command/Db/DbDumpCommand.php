@@ -216,6 +216,12 @@ class DbDumpCommand extends CommandBase
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }
+                if (!$relationships->isOracleDB($database)) {
+                    // if ORACLE, don't dump tablespaces 
+                    // PROCESS privilege needed and we don't have that
+                    // https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html#option_mysqldump_no-tablespaces
+                    $dumpCommand .= ' --no-tablespaces';
+                }
                 foreach ($excludedTables as $table) {
                     $dumpCommand .= ' ' . OsUtil::escapePosixShellArg(sprintf('--ignore-table=%s.%s', $database['path'], $table));
                 }
