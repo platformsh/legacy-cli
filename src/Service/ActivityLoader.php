@@ -170,6 +170,7 @@ class ActivityLoader
             'environment.access.add',
             'environment.access.remove',
             'environment.activate',
+            'environment.alert',
             'environment.backup',
             'environment.backup.delete',
             'environment.branch',
