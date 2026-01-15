@@ -1190,15 +1190,44 @@ class Api
      */
     public function getOrganizationLabel(Organization $organization, $tag = 'info')
     {
+        $showType = (bool) $this->config->get('api.organization_types');
+        $type = $showType ? $organization->type : '';
+
         $name = $organization->name;
         $label = $organization->label;
-        $use_label = strlen($label) > 0 && $label !== $name;
-        $pattern = $use_label ? '%2$s (%3$s)' : '%3$s';
+        $useLabel = strlen($label) > 0 && $label !== $name;
+
         if ($tag !== false) {
-            $pattern = $use_label ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+            if ($useLabel && $showType) {
+                // Tag, label, name and type.
+                $pattern = '<%1$s>%2$s</%1$s> (name: <%1$s>%3$s</%1$s>, type: <%1$s>%4$s</%1$s>)';
+            } else if ($useLabel) {
+                // Tag, label and name.
+                $pattern = '<%1$s>%2$s</%1$s> (<%1$s>%3$s</%1$s>)';
+            } else if ($showType) {
+                // Tag, label and type.
+                $pattern = '<%1$s>%3$s</%1$s> (type: <%1$s>%4$s</%1$s>)';
+            } else {
+                // Tag and name only.
+                $pattern = '<%1$s>%3$s</%1$s>';
+            }
+        } else {
+            if ($useLabel && $showType) {
+                // Label, name and type.
+                $pattern = '%2$s (name: %3$s, type: %4$s)';
+            } else if ($useLabel) {
+                // Label and name.
+                $pattern = '%2$s (%3$s)';
+            } else if ($showType) {
+                // Label and type.
+                $pattern = '%3$s (type: %4$s)';
+            } else {
+                // Name only.
+                $pattern = '%3$s';
+            }
         }
 
-        return sprintf($pattern, $tag, $label, $name);
+        return sprintf($pattern, $tag, $label, $name, $type);
     }
 
     /**
