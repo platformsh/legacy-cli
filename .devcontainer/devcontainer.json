@@ -1,0 +1,8 @@
+{
+    "name": "Upsun CLI",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "remoteUser": "upsun",
+    "postCreateCommand": "composer install"
+}
