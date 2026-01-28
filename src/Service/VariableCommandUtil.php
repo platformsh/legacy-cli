@@ -7,8 +7,11 @@ namespace Platformsh\Cli\Service;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Selector\Selection;
 use Platformsh\Client\Model\ApiResourceBase;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
+use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -170,6 +173,32 @@ class VariableCommandUtil
             'includeAsOption' => false,
             'defaultCallback' => fn(): ?string => $getSelection()->hasEnvironment() ? $getSelection()->getEnvironment()->id : null,
         ]);
+        $fields['application_scope'] = new ArrayField('Application scope', [
+            'optionName' => 'app-scope',
+            'description' => 'A list of application names to which this variable will apply.',
+            'questionLine' => 'To which applications should this variable apply?',
+            'default' => [],
+            'required' => false,
+            'avoidQuestion' => true,
+            'validator' => function ($values) use ($getSelection) {
+                $selection = $getSelection();
+                $appNames = $this->listApps($selection->getProject(), $selection->hasEnvironment() ? $selection->getEnvironment() : null);
+                if ($appNames === false) {
+                    // No app names available: skip validation.
+                    return true;
+                }
+                foreach ($values as $value) {
+                    if (!in_array($value, $appNames, true)) {
+                        throw new InvalidArgumentException(sprintf(
+                            'The app "%s" was not found. Valid app names are: %s',
+                            $value,
+                            implode(', ', $appNames)
+                        ));
+                    }
+                }
+                return true;
+            },
+        ]);
         $fields['name'] = new Field('Name', [
             'description' => 'The variable name',
             'validators' => [
@@ -255,5 +284,30 @@ class VariableCommandUtil
             'none' => 'No prefix: The variable will be part of <comment>$' . $this->config->getStr('service.env_prefix') . 'VARIABLES</comment>.',
             'env:' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
+    }
+
+    /**
+     * List application names for validating application_scope values.
+     *
+     * @param Project $project
+     * @param Environment|null $environment If not provided, the project's default environment will be used.
+     *
+     * @return string[]|false
+     */
+    private function listApps(Project $project, ?Environment $environment = null): array|false
+    {
+        if (!$environment) {
+            if ($project->default_branch !== '') {
+                $environment = $this->api->getEnvironment($project->default_branch, $project);
+            }
+            if (!$environment) {
+                return false;
+            }
+        }
+        $deployment = $this->api->getCurrentDeployment($environment, false, false);
+        if (!$deployment) {
+            return false;
+        }
+        return array_keys($deployment->webapps);
     }
 }

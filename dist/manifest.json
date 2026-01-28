@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.27.0",
-        "sha1": "62e5f46d69cf191324b2baa4a0ee9aa1487d564a",
-        "sha256": "77b998915dc64a2141809dec08a7e9988045376e4bbcb99005512249813b9c61",
+        "version": "4.30.0",
+        "sha1": "3e442238f815ba68ce46fbdfd1454c3dd644fd26",
+        "sha256": "9903c7111a1b7b0c94a44a7e5a421c3abb58c3ff53fc39079e9b896d0e93cf0c",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.27.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.30.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -77,7 +77,11 @@
             "4.24.0": "New features:\n\n* Support guaranteed resources, adding a new CPU type concept (`shared` or\n  `guaranteed`) to the `resources` commands.\n* Support manual deployments:\n  - Add an `environment:deploy` command to deploy staged changes.\n  - Add an `environment:deploy:type` command to view or change the deployment\n    type (between `manual` and `automatic`).\n  - Add a `deployment_type` property (read-only) to the `environment:info`\n    command.\n  - Support the `staged` activity state in activity-related commands.\n\nOther changes:\n\n* Increase the default limits for finding activities.\n* Stop bypassing the organization endpoint for subscriptions.\n* Update Go test dependencies.\n* Add `mark_unwrapped_legacy` config option (defaults to `false`).",
             "4.25.0": "New features:\n\n* Autoscaling-related features:\n    - Add an `autoscaling` command to read autoscaling settings.\n    - Mark services with autoscaling in the `resources` command.\n    - Disallow changing the instance count in `resources:set` when autoscaling is enabled.\n* Support the OpenTelemetry Protocol (`otlp`) integration, when available on the project.\n* Add a `--strategy` (`-s`) option to the `env:deploy` command (`stopstart` or `rolling`).\n* Require confirmation on `branch` or `env:activate` commands when guaranteed resources are configured.\n\nOther changes:\n\n* Update embedded docs links to the new permalink structure.\n* Avoid writing to stdout when opening a URL.\n* Treat `upsun` and `platformsh` vendors as equivalent in the project list from 2025-09-23.\n* Fix the command recommendation when there are staged activities.\n* Fix the Drush site URL when there is no app route (e.g. with Varnish).",
             "4.26.0": "New features:\n\n* Add `autoscaling:set` command, to configure CPU-based autoscaling\n* Add support for organization types\n  - Display the organization type in the `orgs` list\n  - Add a `--type` filter in the `orgs` list\n  - Add a `--type` option to `org:create`\n  - Display the organization type in the `projects` list\n  - Add an `--org-type` filter in the `projects` list\n* Add a `deploy` alias for the `env:deploy` command\n\nOther changes:\n\n* Fix \"This environment is inactive\" during activation, if the deployment cannot \n  be fetched.",
-            "4.27.0": "* Support `memory` as a trigger for autoscaling\n* Set `--fail-with-body` by default in `:curl` commands\n* Update name of `otlp` integration to `otlplog`"
+            "4.27.0": "* Support `memory` as a trigger for autoscaling\n* Set `--fail-with-body` by default in `:curl` commands\n* Update name of `otlp` integration to `otlplog`",
+            "4.28.0": "New features:\n\n* Display activities with non-zero exit codes as failed.\n* Allow specifying the deploy strategy on push.\n* Switch to new, more efficient endpoint for querying metrics.  \n  Output will be mostly the same as the previous `metrics` commands, with these\n  exceptions:\n  - Rows for the `router` service are now displayed by default.\n  - The `---internal---storage` is no longer displayed by default.\n  - `inodes` columns are now displayed by default in the `metrics` command. The\n    first 5 table columns are the same, and the other commands' default columns\n    are the same.\n  - The `--interval` option is deprecated and no longer has an effect. The\n    default interval displayed changes from 2 minutes to 1 minute.\n\nOther changes:\n\n* Error earlier in non-interactive mode when an organization ID is required.\n* Add an example for adding a column in activity:list command help.\n* Remove security contact from writable properties of billing profile.",
+            "4.28.2": "* Fix: the resources:build:get command should be hidden when sizing is disabled (#1583)",
+            "4.29.0": "* Allow configuring autoscaling for all services that support it.\n* Skip the \"type\" question when creating an organization.\n* Restore the metrics --interval option.\n* Return an error for a failed rolling deployment.",
+            "4.30.0": "* Add `--app-scope` option for variables.\n* Fix `PROCESS privilege(s)` error during `db:dump` of oracle-mysql databases.\n* Add `environment.alert` activity type."
         }
     },
     {

@@ -122,7 +122,6 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $writableProperties = [
             'company_name' => 'string',
             'billing_contact' => 'string',
-            'security_contact' => 'string',
             'vat_number' => 'string',
             'default_catalog' => 'string',
             'project_options_url' => 'string',

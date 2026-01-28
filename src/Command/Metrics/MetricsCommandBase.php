@@ -255,6 +255,7 @@ abstract class MetricsCommandBase extends CommandBase
         return null;
     }
 
+
     /**
      * Validates the interval and range input, and finds defaults.
      *

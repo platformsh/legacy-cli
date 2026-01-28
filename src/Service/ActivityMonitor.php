@@ -593,7 +593,7 @@ class ActivityMonitor
 
         foreach ($activity->commands ?? [] as $command) {
             if ($command['exit_code'] > 0) {
-                $name = Activity::RESULT_FAILURE;
+                $name = self::RESULT_NAMES[Activity::RESULT_FAILURE];
                 $result = Activity::RESULT_FAILURE;
                 break;
             }

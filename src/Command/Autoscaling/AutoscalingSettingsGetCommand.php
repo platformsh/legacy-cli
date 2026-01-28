@@ -10,6 +10,7 @@ use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -73,13 +74,26 @@ class AutoscalingSettingsGetCommand extends CommandBase
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 
-        $services = array_merge($deployment->webapps, $deployment->workers);
+        $services = $this->api->allServices($deployment);
         if (empty($services)) {
-            $this->stdErr->writeln('No apps or workers found.');
+            $this->stdErr->writeln('No apps, workers, or services found.');
             return 1;
         }
 
         if (!empty($autoscalingSettings['services'])) {
+            // Filter autoscaling settings to only show services that are allowed to be configured.
+            $filteredSettings = $this->filterAutoscalingSettings($autoscalingSettings['services'], $services, $selection->getProject());
+
+            if (empty($filteredSettings)) {
+                $this->stdErr->writeln(sprintf('No autoscaling configuration found for the project %s, environment %s.', $this->api->getProjectLabel($selection->getProject()), $this->api->getEnvironmentLabel($environment)));
+                $isOriginalCommand = $input instanceof ArgvInput;
+                if ($isOriginalCommand) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf('You can configure autoscaling by running: <info>%s autoscaling:set</info>', $this->config->getStr('application.executable')));
+                }
+                return 0;
+            }
+
             if (!$this->table->formatIsMachineReadable()) {
                 $this->stdErr->writeln(sprintf('Autoscaling configuration for the project %s, environment %s:', $this->api->getProjectLabel($selection->getProject()), $this->api->getEnvironmentLabel($environment)));
             }
@@ -87,7 +101,7 @@ class AutoscalingSettingsGetCommand extends CommandBase
             $empty = $this->table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
 
             $rows = [];
-            foreach ($autoscalingSettings['services'] as $service => $settings) {
+            foreach ($filteredSettings as $service => $settings) {
                 $row = [
                     'service' => $service,
                     'metric' => $empty,
@@ -136,5 +150,54 @@ class AutoscalingSettingsGetCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * Filters autoscaling settings to only include services that are allowed to be configured.
+     *
+     * @param array<string, array<string, mixed>> $autoscalingSettings Autoscaling settings from the API
+     * @param array<string, \Platformsh\Client\Model\Deployment\Service|\Platformsh\Client\Model\Deployment\WebApp|\Platformsh\Client\Model\Deployment\Worker> $services Array of Service|WebApp|Worker objects from deployment
+     * @param \Platformsh\Client\Model\Project $project
+     *
+     * @return array<string, array<string, mixed>> Filtered autoscaling settings
+     */
+    protected function filterAutoscalingSettings(array $autoscalingSettings, array $services, \Platformsh\Client\Model\Project $project): array
+    {
+        // Force refresh to ensure we have the latest capabilities.
+        $capabilities = $this->api->getProjectCapabilities($project, true);
+        $servicesCapabilityEnabled = !empty($capabilities->autoscaling['supports_horizontal_scaling_services']);
+
+        $filtered = [];
+        foreach ($autoscalingSettings as $serviceName => $settings) {
+            // Skip if service doesn't exist in deployment
+            if (!isset($services[$serviceName])) {
+                continue;
+            }
+
+            $service = $services[$serviceName];
+            $properties = $service->getProperties();
+
+            // For apps and workers: check supports_horizontal_scaling if present, otherwise allow
+            if (!($service instanceof Service)) {
+                if (isset($properties['supports_horizontal_scaling']) && !$properties['supports_horizontal_scaling']) {
+                    continue;
+                }
+                $filtered[$serviceName] = $settings;
+                continue;
+            }
+
+            // For services: check both the deployment property and the project capability
+            if (!isset($properties['supports_horizontal_scaling']) || !$properties['supports_horizontal_scaling']) {
+                continue;
+            }
+
+            if (!$servicesCapabilityEnabled) {
+                continue;
+            }
+
+            $filtered[$serviceName] = $settings;
+        }
+
+        return $filtered;
     }
 }

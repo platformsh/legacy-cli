@@ -94,7 +94,8 @@ class ActivityListCommand extends ActivityCommandBase
              ->addExample('List recent pushes', '--type push')
              ->addExample('List all recent activities excluding crons and redeploys', "--exclude-type '*.cron,*.backup*'")
              ->addExample('List pushes made before 15 March', '--type push --start 2015-03-15')
-             ->addExample('List up to 25 incomplete activities', '--limit 25 -i');
+             ->addExample('List up to 25 incomplete activities', '--limit 25 -i')
+             ->addExample('Include the activity type in the table', '--columns +type');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

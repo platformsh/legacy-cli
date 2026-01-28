@@ -66,7 +66,8 @@ class EnvironmentPushCommand extends CommandBase
             ->addHiddenOption('branch', null, InputOption::VALUE_NONE, 'DEPRECATED: alias of --activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
-            ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
+            ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)")
+            ->addOption('deploy-strategy', 's', InputOption::VALUE_REQUIRED, 'Set the deployment strategy, rolling or stopstart (default)');
         $this->resourcesUtil->addOption(
             $this->getDefinition(),
             $this->validResourcesInitOptions,
@@ -172,6 +173,12 @@ class EnvironmentPushCommand extends CommandBase
         $parentId = $input->getOption('parent');
         $type = $input->getOption('type');
 
+        $strategy = $input->getOption('deploy-strategy');
+        if ($strategy !== null && $strategy !== 'rolling' && $strategy !== 'stopstart') {
+            $this->stdErr->writeln(sprintf('Invalid deploy strategy <error>%s</error>, should be "rolling" or "stopstart"', $strategy));
+            return 1;
+        }
+
         // Check if the environment may be a production one.
         $mayBeProduction = $type === 'production'
             || ($targetEnvironment && $targetEnvironment->type === 'production')
@@ -204,6 +211,14 @@ class EnvironmentPushCommand extends CommandBase
             $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the branch %s of project %s', $source, $targetLabel, $projectLabel));
             if ($activateRequested && !$this->projectSshInfo->hasExternalGitHost($project)) {
                 $this->stdErr->writeln('It will be created as an active environment.');
+            }
+        }
+
+        if ($targetEnvironment) {
+            if (!$targetEnvironment->operationAvailable('deploy', true)) {
+                $this->stdErr->writeln(sprintf('Deployment strategy: <info>%s</info>', $strategy ?: "stopstart"));
+            } else {
+                $this->stdErr->writeln('The activity will be staged, ignoring the deployment strategy.');
             }
         }
 
@@ -266,6 +281,9 @@ class EnvironmentPushCommand extends CommandBase
             }
             if ($resourcesInit !== null) {
                 $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
+            }
+            if ($strategy !== null) {
+                $gitArgs[] = '--push-option=deploy.strategy=' . $strategy;
             }
 
             // Build the SSH command to use with Git.

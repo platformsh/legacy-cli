@@ -54,6 +54,7 @@ class OrganizationCreateCommand extends OrganizationCommandBase
             $fields['type'] = new OptionsField('Type', [
                 'description' => 'The organization type.',
                 'options' => $options,
+                'avoidQuestion' => true,
                 'default' => $this->config->getWithDefault('api.default_organization_type', key($options)),
             ]);
         }
