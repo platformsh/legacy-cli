@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.29.0",
-        "sha1": "4cff765b9e411c529c25c349b9a83a6d11ddf9e4",
-        "sha256": "bdfd9231a27ae245a2c8d8042f4f5a51c160d8fbae16d7f6abd43560abaf02aa",
+        "version": "4.30.0",
+        "sha1": "3e442238f815ba68ce46fbdfd1454c3dd644fd26",
+        "sha256": "9903c7111a1b7b0c94a44a7e5a421c3abb58c3ff53fc39079e9b896d0e93cf0c",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.29.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.30.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -80,7 +80,8 @@
             "4.27.0": "* Support `memory` as a trigger for autoscaling\n* Set `--fail-with-body` by default in `:curl` commands\n* Update name of `otlp` integration to `otlplog`",
             "4.28.0": "New features:\n\n* Display activities with non-zero exit codes as failed.\n* Allow specifying the deploy strategy on push.\n* Switch to new, more efficient endpoint for querying metrics.  \n  Output will be mostly the same as the previous `metrics` commands, with these\n  exceptions:\n  - Rows for the `router` service are now displayed by default.\n  - The `---internal---storage` is no longer displayed by default.\n  - `inodes` columns are now displayed by default in the `metrics` command. The\n    first 5 table columns are the same, and the other commands' default columns\n    are the same.\n  - The `--interval` option is deprecated and no longer has an effect. The\n    default interval displayed changes from 2 minutes to 1 minute.\n\nOther changes:\n\n* Error earlier in non-interactive mode when an organization ID is required.\n* Add an example for adding a column in activity:list command help.\n* Remove security contact from writable properties of billing profile.",
             "4.28.2": "* Fix: the resources:build:get command should be hidden when sizing is disabled (#1583)",
-            "4.29.0": "* Allow configuring autoscaling for all services that support it.\n* Skip the \"type\" question when creating an organization.\n* Restore the metrics --interval option.\n* Return an error for a failed rolling deployment."
+            "4.29.0": "* Allow configuring autoscaling for all services that support it.\n* Skip the \"type\" question when creating an organization.\n* Restore the metrics --interval option.\n* Return an error for a failed rolling deployment.",
+            "4.30.0": "* Add `--app-scope` option for variables.\n* Fix `PROCESS privilege(s)` error during `db:dump` of oracle-mysql databases.\n* Add `environment.alert` activity type."
         }
     },
     {
