@@ -230,6 +230,17 @@ class Relationships implements InputConfiguringInterface
     }
 
     /**
+     * Returns whether the database is OracleDB.
+     *
+     * @param array $database The database definition from the relationships.
+     * @return bool
+     */
+    public function isOracleDB(array $database)
+    {
+        return isset($database['type']) && \strpos($database['type'], 'oracle-mysql:') === 0;
+    }
+
+    /**
      * Returns the correct command to use with a MariaDB client.
      *
      * MariaDB now needs MariaDB-specific command names. But these were added
