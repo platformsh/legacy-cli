@@ -13,7 +13,8 @@ class TunnelInfoCommand extends TunnelCommandBase
           ->setName('tunnel:info')
           ->setDescription("View relationship info for SSH tunnels")
           ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
-          ->addOption('encode', 'c', InputOption::VALUE_NONE, 'Output as base64-encoded JSON');
+          ->addOption('encode', 'c', InputOption::VALUE_NONE, 'Output as base64-encoded JSON')
+          ->addOption('env', null, InputOption::VALUE_NONE, 'Output as a list of environment variables ("export" statements)');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -58,6 +59,29 @@ class TunnelInfoCommand extends TunnelCommandBase
             }
 
             return 1;
+        }
+
+        if ($input->getOption('env')) {
+            if ($input->getOption('property') || $input->getOption('encode')) {
+                $this->stdErr->writeln('You cannot combine --env with --encode or --property.');
+                return 1;
+            }
+
+            $envPrefix = $this->config()->get('service.env_prefix');
+            $output->writeln('export ' . $envPrefix . 'RELATIONSHIPS=' . base64_encode(json_encode($relationships)));
+
+            foreach ($relationships as $name => $services) {
+                if (!isset($services[0])) {
+                    continue;
+                }
+                foreach ($services[0] as $key => $value) {
+                    if (is_scalar($value)) {
+                        $output->writeln('export ' . strtoupper($name) . '_' . strtoupper($key) . '=' . $value);
+                    }
+                }
+            }
+
+            return 0;
         }
 
         if ($input->getOption('encode')) {
