@@ -69,18 +69,25 @@ readonly class CurlCli implements InputConfiguringInterface
         $process = Process::fromShellCommandline($commandline);
         $shouldRetry = false;
         $newToken = '';
-        $onOutput = function ($type, $buffer) use ($censor, $output, $stdErr, $process, $retryOn401, &$newToken, &$shouldRetry) {
+        $stdoutBuffer = '';
+        $onOutput = function ($type, $buffer) use ($censor, $output, $stdErr, $process, $retryOn401, &$newToken, &$shouldRetry, &$stdoutBuffer) {
             if ($shouldRetry) {
                 // Ensure there is no output after a retry is triggered.
                 return;
             }
             if ($type === Process::OUT) {
-                $output->write($buffer);
+                if ($retryOn401) {
+                    // Buffer stdout so it can be discarded if a 401 triggers a retry.
+                    $stdoutBuffer .= $buffer;
+                } else {
+                    $output->write($buffer);
+                }
                 return;
             }
             if ($type === Process::ERR) {
                 if ($retryOn401 && $this->parseCurlStatusCode($buffer) === 401 && $this->api->isLoggedIn()) {
                     $shouldRetry = true;
+                    $stdoutBuffer = '';
                     $process->clearErrorOutput();
                     $process->clearOutput();
 
@@ -100,6 +107,11 @@ readonly class CurlCli implements InputConfiguringInterface
 
         $process->run($onOutput);
 
+        if (!$shouldRetry && $stdoutBuffer !== '') {
+            $output->write($stdoutBuffer);
+            $stdoutBuffer = '';
+        }
+
         if ($shouldRetry) {
             // Create a new curl process, replacing the access token.
             $commandline = $this->buildCurlCommand($url, $newToken, $input);
@@ -111,6 +123,10 @@ readonly class CurlCli implements InputConfiguringInterface
 
             $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
             $process->run($onOutput);
+
+            if ($stdoutBuffer !== '') {
+                $output->write($stdoutBuffer);
+            }
         }
 
         return $process->getExitCode();
