@@ -6,6 +6,7 @@ namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Selector\Selection;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -304,8 +305,9 @@ class VariableCommandUtil
                 return false;
             }
         }
-        $deployment = $this->api->getCurrentDeployment($environment, false, false);
-        if (!$deployment) {
+        try {
+            $deployment = $this->api->getCurrentDeployment($environment, false);
+        } catch (EnvironmentStateException $e) {
             return false;
         }
         return array_keys($deployment->webapps);
