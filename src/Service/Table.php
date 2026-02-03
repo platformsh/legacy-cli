@@ -244,6 +244,10 @@ class Table implements InputConfiguringInterface
                 $this->renderPlain($rows, $header);
                 break;
 
+            case 'json':
+                $this->renderJson($rows, $header);
+                break;
+
             case null:
             case 'table':
                 $this->renderTable($rows, $header);
@@ -263,7 +267,7 @@ class Table implements InputConfiguringInterface
      */
     public function formatIsMachineReadable(): bool
     {
-        return in_array($this->getFormat(), ['csv', 'tsv', 'plain']);
+        return in_array($this->getFormat(), ['csv', 'tsv', 'plain', 'json']);
     }
 
     /**
@@ -382,6 +386,31 @@ class Table implements InputConfiguringInterface
         // default internal field separator (IFS) does not account for CR. So
         // the line break character is forced as LF.
         $this->output->write((new Csv($delimiter, "\n"))->format($rows));
+    }
+
+    /**
+     * Renders JSON output.
+     *
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
+     */
+    protected function renderJson(array $rows, array $header): void
+    {
+        // Remove TableSeparator objects.
+        $rows = array_values(array_filter($rows, '\\is_array'));
+
+        $data = [];
+        foreach ($rows as $row) {
+            $d = [];
+
+            foreach ($header as $k => $h) {
+                $d[(string) $h] = is_scalar($row[$k]) ? $row[$k] : (string) $row[$k];
+            }
+
+            $data[] = $d;
+        }
+
+        $this->output->write(json_encode(['data' => $data], JSON_THROW_ON_ERROR));
     }
 
     /**

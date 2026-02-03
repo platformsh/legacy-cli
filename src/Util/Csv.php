@@ -57,7 +57,7 @@ class Csv
      *
      * @return string
      */
-    protected function formatCell(string|\Stringable $cell): string
+    protected function formatCell(string|int|float|null|bool|\Stringable $cell): string
     {
         // Cast cell data to a string.
         $cell = (string) $cell;
