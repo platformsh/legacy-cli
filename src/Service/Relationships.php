@@ -234,10 +234,10 @@ class Relationships implements InputConfiguringInterface
     /**
      * Returns whether the database is OracleDB.
      *
-     * @param array $database The database definition from the relationships.
+     * @param array<string, mixed> $database The database definition from the relationships.
      * @return bool
      */
-    public function isOracleDB(array $database)
+    public function isOracleDB(array $database): bool
     {
         return isset($database['type']) && \strpos($database['type'], 'oracle-mysql:') === 0;
     }

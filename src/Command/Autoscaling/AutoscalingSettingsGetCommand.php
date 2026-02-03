@@ -6,6 +6,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
@@ -35,7 +36,7 @@ class AutoscalingSettingsGetCommand extends CommandBase
     /** @var string[] */
     protected array $defaultColumns = ['service', 'metric', 'direction', 'threshold', 'duration', 'enabled', 'instance_count'];
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -74,7 +75,7 @@ class AutoscalingSettingsGetCommand extends CommandBase
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 
-        $services = $this->api->allServices($deployment);
+        $services = $this->resourcesUtil->allServices($deployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps, workers, or services found.');
             return 1;

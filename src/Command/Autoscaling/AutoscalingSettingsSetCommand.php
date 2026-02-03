@@ -93,7 +93,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         }
         $autoscalingSettings = $autoscalingSettings->getData();
 
-        $services = $this->api()->allServices($deployment);
+        $services = $this->resourcesUtil->allServices($deployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps, workers, or services found.');
             return 1;
@@ -106,7 +106,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $service = $input->getOption('service');
         if ($service !== null) {
             $service = $this->validateService($service, $services);
-            $this->validateServiceSupportsAutoscaling($service, $services[$service]);
+            $this->validateServiceSupportsAutoscaling($service, $services[$service], $selection->getProject());
         }
 
         $supportedMetrics = $this->getSupportedMetrics($defaults);
@@ -190,7 +190,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if ($showInteractiveForm) {
             // Interactive mode: let user select services and configure them
             // Filter to only show services that support autoscaling
-            $supportedServices = $this->filterServicesWithAutoscalingSupport($services);
+            $supportedServices = $this->filterServicesWithAutoscalingSupport($services, $selection->getProject());
 
             if (empty($supportedServices)) {
                 $this->stdErr->writeln('No services that support autoscaling were found.');
@@ -691,16 +691,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @param string $serviceName
      * @param Service|WebApp|Worker $service
+     * @param \Platformsh\Client\Model\Project $project
      *
      * @throws InvalidArgumentException
-     *
-     * @return void
      */
-    protected function validateServiceSupportsAutoscaling($serviceName, $service)
+    protected function validateServiceSupportsAutoscaling(string $serviceName, Service|WebApp|Worker $service, \Platformsh\Client\Model\Project $project): void
     {
         $properties = $service->getProperties();
 
-        // For apps and workers: check supports_horizontal_scaling if present, otherwise allow
+        // For apps and workers: check supports_horizontal_scaling if present, otherwise allow.
         if (!($service instanceof Service)) {
             if (isset($properties['supports_horizontal_scaling']) && !$properties['supports_horizontal_scaling']) {
                 throw new InvalidArgumentException(sprintf(
@@ -712,7 +711,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             return;
         }
 
-        // For services: check both the deployment property and the project capability
+        // For services: check both the deployment property and the project capability.
         if (!isset($properties['supports_horizontal_scaling']) || !$properties['supports_horizontal_scaling']) {
             throw new InvalidArgumentException(sprintf(
                 'The service <error>%s</error> does not support autoscaling.',
@@ -720,9 +719,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
             ));
         }
 
-        $project = $this->getSelectedProject();
-        // Force refresh to ensure we have the latest capabilities
-        $capabilities = $this->api()->getProjectCapabilities($project, true);
+        // Force refresh to ensure we have the latest capabilities.
+        $capabilities = $this->api->getProjectCapabilities($project, true);
         if (empty($capabilities->autoscaling['supports_horizontal_scaling_services'])) {
             throw new InvalidArgumentException(sprintf(
                 'The service <error>%s</error> does not support autoscaling because the project does not have horizontal scaling enabled for services.',
@@ -734,15 +732,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
     /**
      * Filters services to only those that support autoscaling.
      *
-     * @param array $services Array of Service|WebApp|Worker objects
+     * @param array<string, Service|WebApp|Worker> $services
+     * @param \Platformsh\Client\Model\Project $project
      *
-     * @return array Filtered array of services that support autoscaling
+     * @return array<string, Service|WebApp|Worker>
      */
-    protected function filterServicesWithAutoscalingSupport(array $services)
+    protected function filterServicesWithAutoscalingSupport(array $services, \Platformsh\Client\Model\Project $project): array
     {
-        $project = $this->getSelectedProject();
-        // Force refresh to ensure we have the latest capabilities
-        $capabilities = $this->api()->getProjectCapabilities($project, true);
+        // Force refresh to ensure we have the latest capabilities.
+        $capabilities = $this->api->getProjectCapabilities($project, true);
         $servicesCapabilityEnabled = !empty($capabilities->autoscaling['supports_horizontal_scaling_services']);
 
         return array_filter($services, function ($service) use ($servicesCapabilityEnabled) {
