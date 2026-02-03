@@ -21,6 +21,8 @@ class DbDumpCommand extends CommandBase
         $this->setName('db:dump')
             ->setDescription('Create a local dump of the remote database');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
+            ->addOption('pg-namespace', null, InputOption::VALUE_REQUIRED| InputOption::VALUE_IS_ARRAY, 'Dump the named namespace/schema(s) only (Postgresql specific)')
+            ->addOption('pg-exclude-namespace', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Do NOT dump the named namespace/schema(s) (Postgresql specific)')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')
             ->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip')
@@ -53,6 +55,9 @@ class DbDumpCommand extends CommandBase
         $gzip = $input->getOption('gzip');
         $includedTables = $input->getOption('table');
         $excludedTables = $input->getOption('exclude-table');
+        $pgSchemas = $input->getOption('pg-namespace');
+        $pgExcludedSchemas = $input->getOption('pg-exclude-namespace');
+        
         $schemaOnly = $input->getOption('schema-only');
         $projectRoot = $this->getProjectRoot();
 
@@ -142,6 +147,8 @@ class DbDumpCommand extends CommandBase
                     $schema,
                     $includedTables,
                     $excludedTables,
+                    $pgSchemas,
+                    $pgExcludedSchemas,
                     $schemaOnly,
                     $gzip
                 );
@@ -199,6 +206,12 @@ class DbDumpCommand extends CommandBase
                 }
                 foreach ($excludedTables as $table) {
                     $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-table=' . $table);
+                }
+                foreach ($pgSchemas as $pgSChema) {
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--schema=' . $pgSChema);
+                }
+                foreach ($pgExcludedSchemas as $pgExcludedSChema) {
+                    $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--exclude-schema=' . $pgExcludedSChema);
                 }
                 if ($input->getOption('charset') !== null) {
                     $dumpCommand .= ' ' . OsUtil::escapePosixShellArg('--encoding=' . $input->getOption('charset'));
@@ -315,6 +328,8 @@ class DbDumpCommand extends CommandBase
         $schema = null,
         array $includedTables = [],
         array $excludedTables = [],
+        array $pgSchemas = [],
+        array $pgExcludedSchemas = [],
         $schemaOnly = false,
         $gzip = false)
     {
@@ -336,6 +351,12 @@ class DbDumpCommand extends CommandBase
         }
         if ($excludedTables) {
             $defaultFilename .= '--excl-' . implode(',', $excludedTables);
+        }
+        if ($pgSchemas){
+            $defaultFilename .= '--n-' . implode(',', $pgSchemas);
+        }
+        if ($pgExcludedSchemas){
+            $defaultFilename .= '--N-' . implode(',', $pgExcludedSchemas);
         }
         if ($schemaOnly) {
             $defaultFilename .= '--schema';
