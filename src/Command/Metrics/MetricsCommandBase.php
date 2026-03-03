@@ -26,10 +26,11 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
-    const MIN_INTERVAL = 60; // 1 minute
+    const MIN_INTERVAL = 60;   // 1 minute
 
-    const MIN_RANGE = 300; // 5 minutes
-    const DEFAULT_RANGE = 600;
+    const MIN_RANGE = 300;     // 5 minutes
+    const DEFAULT_RANGE = 600; // 10 minutes
+    const LATEST_GRAIN = 300;  // 5 minutes
 
     /**
      * @var bool whether services have been identified that use high memory
@@ -64,7 +65,7 @@ abstract class MetricsCommandBase extends CommandBase
             . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL))
         );
         $this->addOption('to', null, InputOption::VALUE_REQUIRED, 'The end time. Defaults to now.');
-        $this->addOption('latest', '1', InputOption::VALUE_NONE, 'Show only the latest single data point');
+        $this->addOption('latest', '1', InputOption::VALUE_NONE, 'Show only the latest single data point' . "\n" . 'Defaults to a 5-minute aggregation window to ensure all containers are included. Override with <comment>--interval</comment>.');
         $this->addOption('service', 's', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service or application name' . "\n" . Wildcard::HELP);
         $this->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service type (if --service is not provided). The version is not required.' . "\n" . Wildcard::HELP);
 
@@ -231,6 +232,8 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function validateTimeInput(InputInterface $input)
     {
+        $isLatest = $input->getOption('latest');
+
         if ($to = $input->getOption('to')) {
             $endTime = \strtotime($to);
             if (!$endTime) {
@@ -253,6 +256,8 @@ abstract class MetricsCommandBase extends CommandBase
                 return false;
             }
             $rangeSeconds = (int) $rangeSeconds;
+        } elseif ($isLatest && !$input->getOption('interval')) {
+            $rangeSeconds = self::LATEST_GRAIN;
         } else {
             $rangeSeconds = self::DEFAULT_RANGE;
         }
@@ -274,6 +279,8 @@ abstract class MetricsCommandBase extends CommandBase
 
                 return false;
             }
+        } elseif ($isLatest) {
+            $interval = self::LATEST_GRAIN;
         }
 
         return new TimeSpec($startTime, $endTime, $interval);
