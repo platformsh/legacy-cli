@@ -75,15 +75,29 @@ abstract class MetricsCommandBase extends CommandBase
      * Returns the resources overview URL for the selected environment.
      *
      * @param Environment $environment
-     * @return string|false The link data or false on failure
+     * @return string|false The resources overview URL, or false if not available
      * @throws \GuzzleHttp\Exception\GuzzleException if there is an error in fetching observability metadata
      */
     private function getResourcesOverviewUrl(Environment $environment)
     {
-        if (!$environment->hasLink('#observability-pipeline')) {
+        $entrypointUrl = rtrim($environment->getUri(), '/') . '/observability/';
+
+        $client = $this->api()->getHttpClient();
+        $request = $client->createRequest('GET', $entrypointUrl);
+
+        try {
+            $response = $client->send($request);
+        } catch (BadResponseException $e) {
             return false;
         }
-        return rtrim($environment->getLink('#observability-pipeline'), '/') . '/resources/overview';
+
+        $data = json_decode($response->getBody()->__toString(), true);
+
+        if (empty($data['_links']['resources_overview']['href'])) {
+            return false;
+        }
+
+        return $data['_links']['resources_overview']['href'];
     }
 
     /**
