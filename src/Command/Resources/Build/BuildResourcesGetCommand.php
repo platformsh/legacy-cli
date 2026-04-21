@@ -31,7 +31,14 @@ class BuildResourcesGetCommand extends ResourcesCommandBase
     {
         $this->validateInput($input);
         if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+            $this->stdErr->writeln(
+                    sprintf(
+                        'The flexible resources API is not enabled for the project %s.\n
+                        The function you attempted to use is not available on upsun fixed (platformsh).\n
+                        Please refer to the Upsun fixed (platformsh) documentation: https://fixed.docs.upsun.com/ 
+                        ', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')
+                    )
+            );
             return 1;
         }
 
